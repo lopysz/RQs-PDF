@@ -2,426 +2,335 @@
 <html lang="pt-BR">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-
+<meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Leitor de Requisições</title>
 
-<!-- PDF.js -->
-<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.10.38/pdf.min.mjs"
-        type="module"></script>
-
-<!-- Tesseract -->
-<script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
-
 <style>
-* {
-    box-sizing: border-box;
+:root{
+  --bg:#f4f7f5;
+  --card:#fff;
+  --line:#dfe6e2;
+  --text:#18221d;
+  --muted:#66736c;
+  --accent:#27864d;
+  --accent2:#dff3e6;
+  --danger:#b42318;
 }
 
-body {
-    margin: 0;
-    background: #f4f7f5;
-    color: #202124;
-    font-family: Arial, Helvetica, sans-serif;
+*{box-sizing:border-box}
+
+body{
+  margin:0;
+  background:var(--bg);
+  font-family:Arial,Helvetica,sans-serif;
+  color:var(--text);
 }
 
-header {
-    background: #198754;
-    color: white;
-    padding: 20px;
-    box-shadow: 0 2px 8px rgba(0,0,0,.15);
+.wrap{
+  max-width:1150px;
+  margin:0 auto;
+  padding:24px;
 }
 
-header h1 {
-    margin: 0;
-    font-size: 23px;
+h1{
+  margin:0 0 5px;
+  font-size:27px;
 }
 
-header p {
-    margin: 6px 0 0;
-    font-size: 14px;
-    opacity: .9;
+.sub{
+  color:var(--muted);
+  margin-bottom:20px;
 }
 
-.container {
-    width: min(1200px, 95%);
-    margin: 22px auto;
+.card{
+  background:var(--card);
+  border:1px solid var(--line);
+  border-radius:14px;
+  padding:18px;
+  margin-bottom:16px;
+  box-shadow:0 2px 8px #00000008;
 }
 
-.card {
-    background: white;
-    border-radius: 12px;
-    padding: 20px;
-    margin-bottom: 18px;
-    box-shadow: 0 2px 10px rgba(0,0,0,.07);
+.drop{
+  border:2px dashed #aebbb3;
+  border-radius:12px;
+  padding:32px;
+  text-align:center;
+  background:#fbfdfb;
+  cursor:pointer;
+  display:block;
 }
 
-h2 {
-    margin-top: 0;
-    font-size: 19px;
+.drop.drag{
+  border-color:var(--accent);
+  background:var(--accent2);
 }
 
-.drop-zone {
-    border: 2px dashed #198754;
-    border-radius: 12px;
-    min-height: 190px;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    text-align: center;
-    cursor: pointer;
-    background: #f8fffb;
-    transition: .2s;
+.drop strong{
+  display:block;
+  font-size:18px;
+  margin-bottom:7px;
 }
 
-.drop-zone:hover,
-.drop-zone.dragover {
-    background: #e9f7ef;
-    border-color: #146c43;
+.drop span{
+  color:var(--muted);
 }
 
-.drop-zone strong {
-    display: block;
-    font-size: 18px;
-    margin-bottom: 8px;
+input[type=file]{
+  display:none;
 }
 
-.drop-zone span {
-    color: #6c757d;
-    font-size: 14px;
+button{
+  border:0;
+  border-radius:9px;
+  padding:10px 15px;
+  background:var(--accent);
+  color:white;
+  font-weight:700;
+  cursor:pointer;
 }
 
-input[type="file"] {
-    display: none;
+button.secondary{
+  background:#e8eee9;
+  color:#24332a;
 }
 
-.buttons {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 10px;
-    margin-top: 15px;
+.row{
+  display:flex;
+  gap:10px;
+  align-items:center;
+  flex-wrap:wrap;
 }
 
-button {
-    border: 0;
-    border-radius: 7px;
-    padding: 11px 18px;
-    font-weight: bold;
-    cursor: pointer;
+.progress{
+  height:10px;
+  background:#e7ece9;
+  border-radius:99px;
+  overflow:hidden;
+  margin-top:12px;
 }
 
-button:disabled {
-    opacity: .5;
-    cursor: not-allowed;
+.bar{
+  height:100%;
+  width:0;
+  background:var(--accent);
+  transition:.2s;
 }
 
-.btn-green {
-    background: #198754;
-    color: white;
+.status{
+  margin-top:9px;
+  color:var(--muted);
+  font-size:14px;
+  min-height:20px;
 }
 
-.btn-green:hover:not(:disabled) {
-    background: #157347;
+.grid{
+  display:grid;
+  grid-template-columns:repeat(3,1fr);
+  gap:10px;
 }
 
-.btn-gray {
-    background: #e9ecef;
-    color: #212529;
+.field{
+  background:#f7f9f7;
+  border:1px solid var(--line);
+  border-radius:9px;
+  padding:10px;
 }
 
-.btn-red {
-    background: #dc3545;
-    color: white;
+.label{
+  font-size:11px;
+  color:var(--muted);
+  text-transform:uppercase;
 }
 
-.status {
-    margin-top: 15px;
-    padding: 11px 13px;
-    border-radius: 7px;
-    background: #f1f3f5;
-    font-size: 14px;
+.value{
+  font-weight:700;
+  margin-top:4px;
+  word-break:break-word;
 }
 
-.status.ok {
-    background: #d1e7dd;
-    color: #0f5132;
+.tablewrap{
+  overflow:auto;
+  border:1px solid var(--line);
+  border-radius:10px;
 }
 
-.status.error {
-    background: #f8d7da;
-    color: #842029;
+table{
+  border-collapse:collapse;
+  width:100%;
+  min-width:900px;
 }
 
-.status.warning {
-    background: #fff3cd;
-    color: #664d03;
+th,td{
+  padding:9px 10px;
+  border-bottom:1px solid var(--line);
+  text-align:left;
+  font-size:14px;
 }
 
-.progress {
-    margin-top: 12px;
-    width: 100%;
-    height: 12px;
-    background: #e9ecef;
-    border-radius: 20px;
-    overflow: hidden;
+th{
+  background:#eef4ef;
+  font-size:12px;
+  text-transform:uppercase;
+  color:#516058;
 }
 
-.progress-bar {
-    width: 0%;
-    height: 100%;
-    background: #198754;
-    transition: width .2s;
+tr:last-child td{
+  border-bottom:0;
 }
 
-.progress-text {
-    margin-top: 6px;
-    font-size: 13px;
-    color: #6c757d;
+pre{
+  white-space:pre-wrap;
+  word-break:break-word;
+  background:#101512;
+  color:#d8e8dd;
+  border-radius:10px;
+  padding:14px;
+  max-height:380px;
+  overflow:auto;
+  font-size:12px;
 }
 
-.result-grid {
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 12px;
-    margin-bottom: 18px;
+.hidden{
+  display:none;
 }
 
-.result-box {
-    border: 1px solid #dee2e6;
-    background: #f8f9fa;
-    padding: 13px;
-    border-radius: 8px;
+.error{
+  color:var(--danger);
+  font-weight:700;
 }
 
-.result-box small {
-    display: block;
-    color: #6c757d;
-    margin-bottom: 5px;
+.small{
+  font-size:12px;
+  color:var(--muted);
 }
 
-.result-box strong {
-    font-size: 15px;
-}
+@media(max-width:700px){
+  .wrap{
+    padding:12px;
+  }
 
-.table-wrapper {
-    overflow-x: auto;
-}
-
-table {
-    width: 100%;
-    border-collapse: collapse;
-}
-
-th {
-    background: #198754;
-    color: white;
-    padding: 10px;
-    text-align: left;
-    white-space: nowrap;
-}
-
-td {
-    padding: 9px;
-    border-bottom: 1px solid #dee2e6;
-}
-
-tr:hover td {
-    background: #f8f9fa;
-}
-
-.empty {
-    text-align: center;
-    color: #6c757d;
-    padding: 35px 10px;
-}
-
-textarea {
-    width: 100%;
-    min-height: 280px;
-    resize: vertical;
-    font-family: monospace;
-    font-size: 12px;
-    padding: 12px;
-    border: 1px solid #ced4da;
-    border-radius: 7px;
-}
-
-.raw {
-    display: none;
-    margin-top: 15px;
-}
-
-.file-info {
-    margin-top: 12px;
-    font-size: 13px;
-    color: #6c757d;
-}
-
-.page-preview {
-    display: none;
-    margin-top: 15px;
-}
-
-.page-preview canvas {
-    max-width: 100%;
-    border: 1px solid #ddd;
-    border-radius: 6px;
-}
-
-@media (max-width: 750px) {
-    .result-grid {
-        grid-template-columns: 1fr;
-    }
+  .grid{
+    grid-template-columns:1fr;
+  }
 }
 </style>
 </head>
 
 <body>
 
-<header>
-    <h1>Leitor de Requisições</h1>
-    <p>Leitura de PDF por OCR</p>
-</header>
+<div class="wrap">
 
-<div class="container">
+  <h1>Leitor de Requisições</h1>
 
-    <!-- UPLOAD -->
-    <div class="card">
+  <div class="sub">
+    OCR por coordenadas para preservar código, item, quantidade e colaborador.
+  </div>
 
-        <h2>1. Selecionar requisição</h2>
+  <div class="card">
 
-        <label class="drop-zone" id="dropZone">
+    <label class="drop" id="drop">
 
-            <div>
-                <strong>Arraste o PDF aqui</strong>
-                <span>ou clique para selecionar o arquivo</span>
-            </div>
+      <strong>
+        Selecione ou arraste uma requisição PDF
+      </strong>
 
-            <input
-                type="file"
-                id="fileInput"
-                accept=".pdf,application/pdf"
-            >
+      <span>
+        O processamento acontece no navegador.
+      </span>
 
-        </label>
+      <input
+        id="file"
+        type="file"
+        accept=".pdf,application/pdf"
+      >
 
-        <div
-            id="fileInfo"
-            class="file-info"
-        >
-            Nenhum arquivo selecionado.
-        </div>
+    </label>
 
-        <div class="buttons">
+    <div class="progress">
+      <div class="bar" id="bar"></div>
+    </div>
 
-            <button
-                id="btnLer"
-                class="btn-green"
-                disabled
-            >
-                Ler requisição
-            </button>
+    <div class="status" id="status">
+      Aguardando PDF.
+    </div>
 
-            <button
-                id="btnLimpar"
-                class="btn-gray"
-            >
-                Limpar
-            </button>
+  </div>
 
-        </div>
 
-        <div
-            id="status"
-            class="status"
-        >
-            Selecione um PDF para começar.
-        </div>
+  <div class="card hidden" id="actions">
 
-        <div class="progress">
-            <div
-                id="progressBar"
-                class="progress-bar"
-            ></div>
-        </div>
+    <div class="row">
 
-        <div
-            id="progressText"
-            class="progress-text"
-        >
-            Aguardando arquivo.
-        </div>
+      <button id="copy">
+        Copiar JSON
+      </button>
+
+      <button class="secondary" id="csv">
+        Exportar CSV
+      </button>
+
+      <button class="secondary" id="toggleRaw">
+        Mostrar OCR bruto
+      </button>
 
     </div>
 
+  </div>
 
-    <!-- RESULTADO -->
-    <div class="card">
 
-        <h2>2. Resultado</h2>
+  <div class="card hidden" id="result">
 
-        <div id="resultado">
+    <h2>Resultado</h2>
 
-            <div class="empty">
-                Nenhuma requisição processada.
-            </div>
+    <div class="grid" id="meta"></div>
 
-        </div>
+    <h3>Itens</h3>
 
-        <div class="buttons">
+    <div class="tablewrap">
 
-            <button
-                id="btnCopiar"
-                class="btn-green"
-                disabled
-            >
-                Copiar resultado
-            </button>
+      <table>
 
-            <button
-                id="btnCSV"
-                class="btn-gray"
-                disabled
-            >
-                Exportar CSV
-            </button>
+        <thead>
 
-            <button
-                id="btnTexto"
-                class="btn-gray"
-                disabled
-            >
-                Mostrar texto OCR
-            </button>
+          <tr>
+            <th>Código</th>
+            <th>Item</th>
+            <th>Tamanho</th>
+            <th>Solicitado</th>
+            <th>Aprovado</th>
+            <th>Colaborador</th>
+          </tr>
 
-        </div>
+        </thead>
 
-        <div
-            id="rawArea"
-            class="raw"
-        >
+        <tbody id="tbody"></tbody>
 
-            <h3>Texto reconhecido pelo OCR</h3>
-
-            <textarea
-                id="rawText"
-                readonly
-            ></textarea>
-
-        </div>
+      </table>
 
     </div>
+
+    <p class="small" id="info"></p>
+
+  </div>
+
+
+  <div class="card hidden" id="rawCard">
+
+    <h3>OCR bruto / diagnóstico</h3>
+
+    <pre id="raw"></pre>
+
+  </div>
 
 </div>
 
 
 <script type="module">
 
-/*
-============================================================
-PDF.JS
-============================================================
-*/
+/* =========================================================
+   BIBLIOTECAS
+========================================================= */
 
 import * as pdfjsLib from
 "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.10.38/pdf.min.mjs";
@@ -430,1834 +339,1515 @@ pdfjsLib.GlobalWorkerOptions.workerSrc =
 "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.10.38/pdf.worker.min.mjs";
 
 
-/*
-============================================================
-ELEMENTOS
-============================================================
-*/
-
-const fileInput =
-document.getElementById("fileInput");
-
-const dropZone =
-document.getElementById("dropZone");
-
-const fileInfo =
-document.getElementById("fileInfo");
-
-const btnLer =
-document.getElementById("btnLer");
-
-const btnLimpar =
-document.getElementById("btnLimpar");
-
-const statusBox =
-document.getElementById("status");
-
-const progressBar =
-document.getElementById("progressBar");
-
-const progressText =
-document.getElementById("progressText");
-
-const resultado =
-document.getElementById("resultado");
-
-const btnCopiar =
-document.getElementById("btnCopiar");
-
-const btnCSV =
-document.getElementById("btnCSV");
-
-const btnTexto =
-document.getElementById("btnTexto");
-
-const rawArea =
-document.getElementById("rawArea");
-
-const rawText =
-document.getElementById("rawText");
+const Tesseract =
+await import(
+  "https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.esm.min.js"
+);
 
 
-let arquivoSelecionado = null;
-let resultadoAtual = null;
+/* =========================================================
+   ELEMENTOS
+========================================================= */
+
+const $ = id => document.getElementById(id);
+
+const drop = $("drop");
+const fileInput = $("file");
+const bar = $("bar");
+const status = $("status");
+
+const resultBox = $("result");
+const actions = $("actions");
+const rawCard = $("rawCard");
 
 
-/*
-============================================================
-STATUS
-============================================================
-*/
+let finalData = null;
+let rawDiagnostic = "";
 
-function setStatus(texto, tipo = "") {
 
-    statusBox.textContent = texto;
+/* =========================================================
+   UPLOAD
+========================================================= */
 
-    statusBox.className = "status";
+drop.addEventListener("click", e => {
 
-    if (tipo) {
-        statusBox.classList.add(tipo);
-    }
+  if(e.target !== fileInput){
+    fileInput.click();
+  }
+
+});
+
+
+fileInput.addEventListener("change", e => {
+
+  if(e.target.files[0]){
+    processPDF(e.target.files[0]);
+  }
+
+});
+
+
+["dragenter","dragover"].forEach(ev => {
+
+  drop.addEventListener(ev,e => {
+
+    e.preventDefault();
+
+    drop.classList.add("drag");
+
+  });
+
+});
+
+
+["dragleave","drop"].forEach(ev => {
+
+  drop.addEventListener(ev,e => {
+
+    e.preventDefault();
+
+    drop.classList.remove("drag");
+
+  });
+
+});
+
+
+drop.addEventListener("drop",e => {
+
+  const f = e.dataTransfer.files[0];
+
+  if(
+    f &&
+    (
+      f.type === "application/pdf" ||
+      /\.pdf$/i.test(f.name)
+    )
+  ){
+
+    processPDF(f);
+
+  }
+
+});
+
+
+/* =========================================================
+   PROGRESSO
+========================================================= */
+
+function setProgress(p,msg){
+
+  bar.style.width =
+    Math.max(0,Math.min(100,p)) + "%";
+
+  status.textContent = msg;
+
 }
 
 
-/*
-============================================================
-PROGRESSO
-============================================================
-*/
+/* =========================================================
+   NORMALIZAÇÃO
+========================================================= */
 
-function setProgress(valor, texto) {
+function norm(s){
 
-    valor = Math.max(
+  return (s || "")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g,"")
+    .toUpperCase()
+    .trim();
+
+}
+
+
+function clean(s){
+
+  return (s || "")
+    .replace(/\s+/g," ")
+    .trim();
+
+}
+
+
+function numFromText(s){
+
+  const m = String(s || "").match(/\d+/);
+
+  return m
+    ? parseInt(m[0],10)
+    : null;
+
+}
+
+
+function looksLikeCode(s){
+
+  const x = String(s || "")
+    .replace(/\s/g,"");
+
+  return /^\d{6,12}$/.test(x);
+
+}
+
+
+/* =========================================================
+   TRANSFORMA WORDS EM LINHAS
+========================================================= */
+
+function wordsLine(words){
+
+  if(!words.length){
+    return [];
+  }
+
+  const sorted = [...words]
+    .sort((a,b) =>
+      a.cy - b.cy ||
+      a.x0 - b.x0
+    );
+
+  const lines = [];
+
+
+  for(const w of sorted){
+
+    let line = lines.find(l =>
+      Math.abs(l.cy - w.cy)
+      <= Math.max(l.avgH * 0.55,8)
+    );
+
+
+    if(!line){
+
+      line = {
+        cy:w.cy,
+        avgH:w.h,
+        words:[]
+      };
+
+      lines.push(line);
+
+    }
+
+
+    line.words.push(w);
+
+    line.avgH =
+      (line.avgH + w.h) / 2;
+
+    line.cy =
+      line.words.reduce(
+        (a,z)=>a+z.cy,
+        0
+      ) / line.words.length;
+
+  }
+
+
+  for(const l of lines){
+
+    l.words.sort(
+      (a,b)=>a.x0-b.x0
+    );
+
+  }
+
+
+  return lines.sort(
+    (a,b)=>a.cy-b.cy
+  );
+
+}
+
+
+function lineText(line){
+
+  return clean(
+    line.words
+      .map(w=>w.text)
+      .join(" ")
+  );
+
+}
+
+
+/* =========================================================
+   DESCOBRIR POSIÇÃO DAS COLUNAS
+========================================================= */
+
+function findHeaderX(lines,candidates){
+
+  for(const line of lines){
+
+    for(const w of line.words){
+
+      const n = norm(w.text);
+
+      if(
+        candidates.some(c =>
+          n === c ||
+          n.includes(c) ||
+          c.includes(n)
+        )
+      ){
+
+        return w.x0 + w.w / 2;
+
+      }
+
+    }
+
+  }
+
+  return null;
+
+}
+
+
+/* =========================================================
+   WORD MAIS PRÓXIMA DE UMA COLUNA
+========================================================= */
+
+function nearestWord(words,x,y,maxY=30){
+
+  let best = null;
+  let bestDistance = Infinity;
+
+
+  for(const w of words){
+
+    const center =
+      w.x0 + w.w / 2;
+
+    const distance =
+      Math.abs(center-x) +
+      Math.abs(w.cy-y)*1.8;
+
+
+    if(
+      Math.abs(w.cy-y) <= maxY &&
+      distance < bestDistance
+    ){
+
+      best = w;
+      bestDistance = distance;
+
+    }
+
+  }
+
+
+  return best;
+
+}
+
+
+/* =========================================================
+   PARSE DA PÁGINA
+========================================================= */
+
+function parsePage(pageWords,pageNo){
+
+  const lines =
+    wordsLine(pageWords);
+
+  const allText =
+    lines.map(lineText).join("\n");
+
+  const nt = norm(allText);
+
+
+  /* -----------------------------------------------
+     DETECTA PÁGINA DE RESUMO
+  ------------------------------------------------ */
+
+  if(
+    nt.includes("QUADRO DE RESUMO") ||
+    nt.includes("RESUMO TOTAL") ||
+    nt.includes("TOTAL DE ITENS APROVADOS")
+  ){
+
+    return {
+      type:"summary",
+      text:allText,
+      items:[]
+    };
+
+  }
+
+
+  /* -----------------------------------------------
+     ENCONTRA AS COLUNAS
+  ------------------------------------------------ */
+
+  const header = {
+
+    code:
+      findHeaderX(
+        lines,
+        ["CODIGO","COD"]
+      ),
+
+    item:
+      findHeaderX(
+        lines,
+        ["ITEM","DESCRICAO","PRODUTO","MATERIAL"]
+      ),
+
+    requested:
+      findHeaderX(
+        lines,
+        ["SOLICITADO","SOLICIT"]
+      ),
+
+    approved:
+      findHeaderX(
+        lines,
+        ["APROVADO","APROV"]
+      ),
+
+    collaborator:
+      findHeaderX(
+        lines,
+        ["COLABORADOR"]
+      )
+
+  };
+
+
+  /* -----------------------------------------------
+     FALLBACK DE POSIÇÕES
+  ------------------------------------------------ */
+
+  const xs =
+    pageWords.map(
+      w => w.x0 + w.w/2
+    );
+
+
+  const minX =
+    Math.min(...xs);
+
+  const maxX =
+    Math.max(...xs);
+
+
+  if(header.code == null){
+    header.code =
+      minX + (maxX-minX)*0.06;
+  }
+
+
+  if(header.item == null){
+    header.item =
+      minX + (maxX-minX)*0.25;
+  }
+
+
+  if(header.requested == null){
+    header.requested =
+      minX + (maxX-minX)*0.78;
+  }
+
+
+  if(header.approved == null){
+    header.approved =
+      minX + (maxX-minX)*0.88;
+  }
+
+
+  /* -----------------------------------------------
+     LOCALIZA CÓDIGOS
+  ------------------------------------------------ */
+
+  const codeWords =
+    pageWords.filter(
+      w => looksLikeCode(w.text)
+    );
+
+
+  const rows = [];
+
+
+  for(const cw of codeWords){
+
+    const y = cw.cy;
+
+
+    /* evita detectar o mesmo código duas vezes */
+
+    if(
+      rows.some(
+        r =>
+          Math.abs(r.y-y) < 15
+      )
+    ){
+      continue;
+    }
+
+
+    const near =
+      pageWords.filter(
+        w =>
+          Math.abs(w.cy-y)
+          <= Math.max(18,cw.h*.9)
+      );
+
+
+    const ordered =
+      near.sort(
+        (a,b)=>a.x0-b.x0
+      );
+
+
+    /* ---------------------------------------------
+       SOLICITADO
+    --------------------------------------------- */
+
+    const req =
+      nearestWord(
+        near,
+        header.requested,
+        y,
+        24
+      );
+
+
+    /* ---------------------------------------------
+       APROVADO
+    --------------------------------------------- */
+
+    const app =
+      nearestWord(
+        near,
+        header.approved,
+        y,
+        24
+      );
+
+
+    /* ---------------------------------------------
+       DESCRIÇÃO
+    --------------------------------------------- */
+
+    const codeRight =
+      cw.x0 + cw.w;
+
+
+    const rightLimit =
+      header.requested != null
+        ? header.requested - 20
+        : maxX*.72;
+
+
+    let descWords =
+      ordered.filter(
+        w =>
+          w.x0 > codeRight+3 &&
+          w.x0+w.w < rightLimit &&
+          !looksLikeCode(w.text)
+      );
+
+
+    /* ---------------------------------------------
+       TAMANHO
+    --------------------------------------------- */
+
+    const sizeCandidates =
+      descWords.filter(
+        w =>
+          /^\(?\d{1,3}\)?$/.test(w.text)
+      );
+
+
+    let size = "";
+    let itemWords = descWords;
+
+
+    if(sizeCandidates.length){
+
+      const sz =
+        sizeCandidates[
+          sizeCandidates.length-1
+        ];
+
+
+      size =
+        sz.text.replace(/[()]/g,"");
+
+
+      itemWords =
+        descWords.filter(
+          w => w !== sz
+        );
+
+    }
+
+
+    const item =
+      clean(
+        itemWords
+          .map(w=>w.text)
+          .join(" ")
+      )
+      .replace(
+        /^[-:|]+|[-:|]+$/g,
+        ""
+      );
+
+
+    /* ---------------------------------------------
+       COLABORADOR
+    --------------------------------------------- */
+
+    let collaborator = "";
+
+
+    const idx =
+      lines.findIndex(
+        l => l.words.includes(cw)
+      );
+
+
+    if(idx >= 0){
+
+      for(
+        let j=idx;
+        j<Math.min(lines.length,idx+5);
+        j++
+      ){
+
+        const lt =
+          norm(lineText(lines[j]));
+
+
+        if(
+          lt.includes("COLABORADOR")
+        ){
+
+          const same =
+            lineText(lines[j])
+              .replace(
+                /.*COLABORADOR\s*:?\s*/i,
+                ""
+              )
+              .trim();
+
+
+          if(same){
+
+            collaborator = same;
+
+          }else if(lines[j+1]){
+
+            collaborator =
+              lineText(lines[j+1]);
+
+          }
+
+
+          break;
+
+        }
+
+      }
+
+    }
+
+
+    rows.push({
+
+      code:
+        cw.text.replace(/\s/g,""),
+
+      item,
+
+      size,
+
+      requested:
+        numFromText(req?.text) ?? 0,
+
+      approved:
+        numFromText(app?.text) ?? 0,
+
+      collaborator,
+
+      y
+
+    });
+
+  }
+
+
+  /* -----------------------------------------------
+     FALLBACK PARA COLABORADORES
+  ------------------------------------------------ */
+
+  if(
+    rows.some(r => !r.collaborator)
+  ){
+
+    const collBlocks = [];
+
+
+    lines.forEach((l,i)=>{
+
+      const n =
+        norm(lineText(l));
+
+
+      if(
+        n.includes("COLABORADOR")
+      ){
+
+        let name =
+          lineText(l)
+            .replace(
+              /.*COLABORADOR\s*:?\s*/i,
+              ""
+            )
+            .trim();
+
+
+        if(
+          !name &&
+          lines[i+1]
+        ){
+
+          name =
+            lineText(lines[i+1]);
+
+        }
+
+
+        if(name){
+
+          collBlocks.push({
+            y:l.cy,
+            name
+          });
+
+        }
+
+      }
+
+    });
+
+
+    for(const r of rows){
+
+      if(!r.collaborator){
+
+        const candidates =
+          collBlocks
+            .filter(c=>c.y>=r.y-5)
+            .sort(
+              (a,b)=>a.y-b.y
+            );
+
+
+        if(candidates.length){
+
+          r.collaborator =
+            candidates[0].name;
+
+        }
+
+      }
+
+    }
+
+  }
+
+
+  /* -----------------------------------------------
+     LIMPA FALSOS POSITIVOS
+  ------------------------------------------------ */
+
+  const cleanRows = [];
+
+
+  for(const r of rows){
+
+    if(!r.code || r.code.length < 6){
+      continue;
+    }
+
+
+    if(
+      /^(000000|111111|999999)$/.test(r.code)
+    ){
+      continue;
+    }
+
+
+    if(
+      cleanRows.some(
+        x =>
+          x.code === r.code &&
+          Math.abs(x.y-r.y)<15
+      )
+    ){
+      continue;
+    }
+
+
+    cleanRows.push(r);
+
+  }
+
+
+  return {
+
+    type:"items",
+
+    text:allText,
+
+    items:cleanRows,
+
+    header
+
+  };
+
+}
+
+
+/* =========================================================
+   OCR
+========================================================= */
+
+async function ocrCanvas(canvas,pageNo,total){
+
+  const worker =
+    await Tesseract.createWorker(
+      "por",
+      1,
+      {
+        logger:m=>{
+
+          if(
+            m.status === "recognizing text"
+          ){
+
+            const p =
+              (m.progress || 0)*100;
+
+
+            setProgress(
+              (
+                (pageNo-1) +
+                p/100
+              ) / total * 100,
+
+              `OCR da página ${pageNo}/${total}: ${p.toFixed(0)}%`
+            );
+
+          }
+
+        }
+      }
+    );
+
+
+  await worker.setParameters({
+
+    tessedit_pageseg_mode:"6",
+
+    preserve_interword_spaces:"1"
+
+  });
+
+
+  const {data} =
+    await worker.recognize(canvas);
+
+
+  await worker.terminate();
+
+
+  const words =
+    (data.words || [])
+      .map(w=>({
+
+        text:w.text,
+
+        x0:w.bbox.x0,
+
+        x1:w.bbox.x1,
+
+        y0:w.bbox.y0,
+
+        y1:w.bbox.y1,
+
+        w:
+          w.bbox.x1 -
+          w.bbox.x0,
+
+        h:
+          w.bbox.y1 -
+          w.bbox.y0,
+
+        cy:
+          (
+            w.bbox.y0 +
+            w.bbox.y1
+          ) / 2
+
+      }))
+      .filter(
+        w => w.text.trim()
+      );
+
+
+  return {
+    data,
+    words
+  };
+
+}
+
+
+/* =========================================================
+   PRÉ-PROCESSAMENTO DA IMAGEM
+========================================================= */
+
+function preprocess(src){
+
+  const c =
+    document.createElement("canvas");
+
+  c.width = src.width;
+  c.height = src.height;
+
+
+  const ctx =
+    c.getContext(
+      "2d",
+      {
+        willReadFrequently:true
+      }
+    );
+
+
+  ctx.drawImage(src,0,0);
+
+
+  const im =
+    ctx.getImageData(
+      0,
+      0,
+      c.width,
+      c.height
+    );
+
+
+  const d = im.data;
+
+
+  for(
+    let i=0;
+    i<d.length;
+    i+=4
+  ){
+
+    const g =
+      0.299*d[i] +
+      0.587*d[i+1] +
+      0.114*d[i+2];
+
+
+    let v =
+      (g-128)*1.45 + 128;
+
+
+    v =
+      Math.max(
         0,
-        Math.min(100, valor)
-    );
+        Math.min(255,v)
+      );
 
-    progressBar.style.width =
-        valor + "%";
 
-    progressText.textContent =
-        texto;
+    d[i] =
+      d[i+1] =
+      d[i+2] =
+      v;
+
+  }
+
+
+  ctx.putImageData(im,0,0);
+
+  return c;
+
 }
 
 
-/*
-============================================================
-SELEÇÃO DO ARQUIVO
-============================================================
-*/
+/* =========================================================
+   METADADOS
+========================================================= */
 
-dropZone.addEventListener(
-    "click",
-    () => fileInput.click()
-);
+function extractMeta(allText){
+
+  const t =
+    allText.replace(/\r/g,"");
 
 
-fileInput.addEventListener(
-    "change",
-    () => {
+  const get = patterns => {
 
-        if (fileInput.files.length) {
+    for(const p of patterns){
 
-            selecionarArquivo(
-                fileInput.files[0]
-            );
-
-        }
-
-    }
-);
+      const m =
+        t.match(p);
 
 
-dropZone.addEventListener(
-    "dragover",
-    event => {
+      if(m){
 
-        event.preventDefault();
+        return clean(m[1]);
 
-        dropZone.classList.add(
-            "dragover"
-        );
+      }
 
     }
-);
+
+    return "";
+
+  };
 
 
-dropZone.addEventListener(
-    "dragleave",
-    () => {
+  return {
 
-        dropZone.classList.remove(
-            "dragover"
-        );
-
-    }
-);
+    solicitante:
+      get([
+        /SOLICITANTE\s*:?\s*([^\n]+)/i
+      ]),
 
 
-dropZone.addEventListener(
-    "drop",
-    event => {
-
-        event.preventDefault();
-
-        dropZone.classList.remove(
-            "dragover"
-        );
-
-        const files =
-            event.dataTransfer.files;
-
-        if (files.length) {
-
-            selecionarArquivo(
-                files[0]
-            );
-
-        }
-
-    }
-);
+    contrato:
+      get([
+        /CONTRATO\s*\/\s*UNIDADE\s*:?\s*([^\n]+)/i,
+        /CONTRATO\s*:?\s*([^\n]+)/i
+      ]),
 
 
-/*
-============================================================
-SELECIONAR ARQUIVO
-============================================================
-*/
+    requisicao:
+      get([
+        /N[ÚU]MERO\s+REQUISI[CÇ][AÃ]O\s*:?\s*(RQ[-\s]?\d+)/i,
+        /\b(RQ[-\s]?\d{3,})\b/i
+      ])
 
-function selecionarArquivo(file) {
+  };
 
-    if (
-        file.type !== "application/pdf" &&
-        !file.name.toLowerCase().endsWith(".pdf")
-    ) {
-
-        setStatus(
-            "Selecione um arquivo PDF.",
-            "error"
-        );
-
-        return;
-    }
+}
 
 
-    arquivoSelecionado = file;
+/* =========================================================
+   CONSOLIDAÇÃO
+========================================================= */
 
-    fileInfo.textContent =
-        `Arquivo: ${file.name} — ` +
-        `${formatarTamanho(file.size)}`;
+function consolidate(items){
 
-    btnLer.disabled = false;
+  /*
+    Mantemos uma linha por colaborador.
 
-    setStatus(
-        "PDF pronto para leitura.",
-        "ok"
+    Isso é importante porque:
+
+    00801856 - Elaine
+    00801856 - Lucia
+
+    são duas retiradas diferentes.
+
+    O resumo da segunda página não entra aqui.
+  */
+
+  return items.map(r => ({
+
+    codigo:r.code,
+
+    nome:r.item,
+
+    tamanho:r.size,
+
+    solicitado:r.requested,
+
+    aprovado:r.approved,
+
+    colaborador:r.collaborator
+
+  }));
+
+}
+
+
+/* =========================================================
+   ESCAPE HTML
+========================================================= */
+
+function escapeHtml(s){
+
+  return String(s ?? "")
+    .replace(
+      /[&<>"']/g,
+      m => ({
+
+        "&":"&amp;",
+        "<":"&lt;",
+        ">":"&gt;",
+        '"':"&quot;",
+        "'":"&#39;"
+
+      }[m])
     );
+
+}
+
+
+/* =========================================================
+   MOSTRAR RESULTADO
+========================================================= */
+
+function render(data){
+
+  finalData = data;
+
+
+  $("meta").innerHTML = "";
+
+
+  [
+    ["Solicitante",data.solicitante],
+    ["Contrato / Unidade",data.contrato],
+    ["Requisição",data.requisicao]
+  ]
+  .forEach(([k,v])=>{
+
+    $("meta").insertAdjacentHTML(
+      "beforeend",
+
+      `
+      <div class="field">
+
+        <div class="label">
+          ${escapeHtml(k)}
+        </div>
+
+        <div class="value">
+          ${escapeHtml(v || "Não identificado")}
+        </div>
+
+      </div>
+      `
+    );
+
+  });
+
+
+  $("tbody").innerHTML = "";
+
+
+  data.itens.forEach(r=>{
+
+    $("tbody").insertAdjacentHTML(
+      "beforeend",
+
+      `
+      <tr>
+
+        <td>
+          ${escapeHtml(r.codigo)}
+        </td>
+
+        <td>
+          ${escapeHtml(r.nome)}
+        </td>
+
+        <td>
+          ${escapeHtml(r.tamanho)}
+        </td>
+
+        <td>
+          ${r.solicitado}
+        </td>
+
+        <td>
+          ${r.aprovado}
+        </td>
+
+        <td>
+          ${escapeHtml(r.colaborador)}
+        </td>
+
+      </tr>
+      `
+    );
+
+  });
+
+
+  $("info").textContent =
+    `${data.itens.length} item(ns) individual(is) identificado(s). ` +
+    `A página de resumo foi ignorada.`;
+
+
+  resultBox.classList.remove("hidden");
+
+  actions.classList.remove("hidden");
+
+}
+
+
+/* =========================================================
+   PROCESSAR PDF
+========================================================= */
+
+async function processPDF(file){
+
+  if(
+    !file ||
+    (
+      !/pdf$/i.test(file.type) &&
+      !/\.pdf$/i.test(file.name)
+    )
+  ){
+
+    status.innerHTML =
+      '<span class="error">Selecione um PDF.</span>';
+
+    return;
+
+  }
+
+
+  resultBox.classList.add("hidden");
+  actions.classList.add("hidden");
+  rawCard.classList.add("hidden");
+
+
+  rawDiagnostic = "";
+
+
+  setProgress(
+    2,
+    "Abrindo PDF..."
+  );
+
+
+  try{
+
+    const buf =
+      await file.arrayBuffer();
+
+
+    const pdf =
+      await pdfjsLib
+        .getDocument({
+          data:buf
+        })
+        .promise;
+
+
+    const pages = [];
+
+
+    /* ---------------------------------------------
+       RENDERIZA TODAS AS PÁGINAS
+    --------------------------------------------- */
+
+    for(
+      let i=1;
+      i<=pdf.numPages;
+      i++
+    ){
+
+      setProgress(
+        (i-1)/pdf.numPages*12,
+        `Renderizando página ${i}/${pdf.numPages}...`
+      );
+
+
+      const page =
+        await pdf.getPage(i);
+
+
+      const viewport =
+        page.getViewport({
+          scale:2.6
+        });
+
+
+      const c =
+        document.createElement("canvas");
+
+
+      c.width =
+        Math.ceil(viewport.width);
+
+
+      c.height =
+        Math.ceil(viewport.height);
+
+
+      await page.render({
+
+        canvasContext:
+          c.getContext("2d"),
+
+        viewport
+
+      }).promise;
+
+
+      pages.push(
+        preprocess(c)
+      );
+
+    }
+
+
+    const pageResults = [];
+
+
+    /* ---------------------------------------------
+       OCR
+    --------------------------------------------- */
+
+    for(
+      let i=0;
+      i<pages.length;
+      i++
+    ){
+
+      const {
+        data,
+        words
+      } =
+        await ocrCanvas(
+          pages[i],
+          i+1,
+          pages.length
+        );
+
+
+      const parsed =
+        parsePage(
+          words,
+          i+1
+        );
+
+
+      pageResults.push(parsed);
+
+
+      rawDiagnostic +=
+        `\n===== PÁGINA ${i+1} =====\n` +
+        `${data.text || parsed.text}\n`;
+
+    }
+
+
+    /* ---------------------------------------------
+       META
+    --------------------------------------------- */
 
     setProgress(
-        0,
-        "Aguardando início do OCR."
+      96,
+      "Organizando campos e itens..."
     );
-}
 
 
-/*
-============================================================
-TAMANHO
-============================================================
-*/
+    const allText =
+      pageResults
+        .map(p=>p.text)
+        .join("\n");
 
-function formatarTamanho(bytes) {
 
-    if (bytes < 1024) {
+    const meta =
+      extractMeta(allText);
 
-        return bytes + " B";
 
-    }
+    /* ---------------------------------------------
+       SÓ PÁGINAS DE ITENS
+    --------------------------------------------- */
 
-    if (bytes < 1024 * 1024) {
+    const itemPages =
+      pageResults.filter(
+        p => p.type === "items"
+      );
 
-        return (
-            bytes / 1024
-        ).toFixed(1) + " KB";
 
-    }
+    let items =
+      itemPages.flatMap(
+        p => p.items
+      );
 
-    return (
-        bytes / (1024 * 1024)
-    ).toFixed(1) + " MB";
-}
 
+    items =
+      consolidate(items);
 
-/*
-============================================================
-LER PDF
-============================================================
-*/
 
-btnLer.addEventListener(
-    "click",
-    lerPDF
-);
+    const data = {
 
+      ...meta,
 
-async function lerPDF() {
-
-    if (!arquivoSelecionado) {
-
-        setStatus(
-            "Selecione um PDF primeiro.",
-            "error"
-        );
-
-        return;
-    }
-
-
-    btnLer.disabled = true;
-    btnCopiar.disabled = true;
-    btnCSV.disabled = true;
-    btnTexto.disabled = true;
-
-
-    resultadoAtual = null;
-
-
-    resultado.innerHTML = `
-        <div class="empty">
-            Processando PDF...
-        </div>
-    `;
-
-
-    rawText.value = "";
-    rawArea.style.display = "none";
-
-
-    try {
-
-        setStatus(
-            "Abrindo PDF...",
-            ""
-        );
-
-
-        setProgress(
-            2,
-            "Abrindo PDF..."
-        );
-
-
-        const buffer =
-            await arquivoSelecionado.arrayBuffer();
-
-
-        const pdf =
-            await pdfjsLib.getDocument({
-                data: buffer
-            }).promise;
-
-
-        const totalPaginas =
-            pdf.numPages;
-
-
-        if (!totalPaginas) {
-
-            throw new Error(
-                "O PDF não possui páginas."
-            );
-
-        }
-
-
-        setStatus(
-            `PDF aberto. ${totalPaginas} página(s) encontrada(s).`,
-            "ok"
-        );
-
-
-        let textoCompleto = "";
-
-
-        /*
-        --------------------------------------------------------
-        PROCESSAR CADA PÁGINA
-        --------------------------------------------------------
-        */
-
-        for (
-            let paginaNumero = 1;
-            paginaNumero <= totalPaginas;
-            paginaNumero++
-        ) {
-
-            const porcentagemBase =
-                ((paginaNumero - 1) /
-                totalPaginas) * 100;
-
-
-            setProgress(
-                porcentagemBase,
-                `Preparando página ${paginaNumero} de ${totalPaginas}...`
-            );
-
-
-            const pagina =
-                await pdf.getPage(
-                    paginaNumero
-                );
-
-
-            /*
-            ----------------------------------------------------
-            ESCALA ALTA
-            ----------------------------------------------------
-            */
-
-            const viewport =
-                pagina.getViewport({
-                    scale: 2.5
-                });
-
-
-            const canvas =
-                document.createElement("canvas");
-
-
-            const contexto =
-                canvas.getContext(
-                    "2d",
-                    {
-                        willReadFrequently: true
-                    }
-                );
-
-
-            canvas.width =
-                Math.ceil(
-                    viewport.width
-                );
-
-            canvas.height =
-                Math.ceil(
-                    viewport.height
-                );
-
-
-            /*
-            ----------------------------------------------------
-            FUNDO BRANCO
-            ----------------------------------------------------
-            */
-
-            contexto.fillStyle =
-                "#ffffff";
-
-            contexto.fillRect(
-                0,
-                0,
-                canvas.width,
-                canvas.height
-            );
-
-
-            await pagina.render({
-                canvasContext: contexto,
-                viewport: viewport
-            }).promise;
-
-
-            /*
-            ----------------------------------------------------
-            PRÉ-PROCESSAMENTO
-            ----------------------------------------------------
-            */
-
-            setProgress(
-                porcentagemBase + 5,
-                `Preparando imagem da página ${paginaNumero}...`
-            );
-
-
-            melhorarImagem(
-                canvas
-            );
-
-
-            /*
-            ----------------------------------------------------
-            OCR
-            ----------------------------------------------------
-            */
-
-            setStatus(
-                `Executando OCR — página ${paginaNumero} de ${totalPaginas}...`,
-                ""
-            );
-
-
-            const resultadoOCR =
-                await Tesseract.recognize(
-                    canvas,
-                    "por",
-                    {
-
-                        logger: mensagem => {
-
-                            if (
-                                mensagem.status ===
-                                "recognizing text"
-                            ) {
-
-                                const progressoOCR =
-                                    (mensagem.progress || 0) * 25;
-
-
-                                const progressoTotal =
-                                    porcentagemBase +
-                                    10 +
-                                    progressoOCR;
-
-
-                                setProgress(
-                                    progressoTotal,
-                                    `OCR página ${paginaNumero}/${totalPaginas}: ${Math.round((mensagem.progress || 0) * 100)}%`
-                                );
-
-                            }
-
-                        }
-
-                    }
-                );
-
-
-            let textoPagina =
-                resultadoOCR.data.text || "";
-
-
-            textoPagina =
-                limparTextoOCR(
-                    textoPagina
-                );
-
-
-            textoCompleto +=
-                `\n\n===== PÁGINA ${paginaNumero} =====\n\n` +
-                textoPagina;
-
-
-            /*
-            ----------------------------------------------------
-            PROGRESSO
-            ----------------------------------------------------
-            */
-
-            const fimPagina =
-                (paginaNumero /
-                totalPaginas) * 100;
-
-
-            setProgress(
-                fimPagina,
-                `Página ${paginaNumero} de ${totalPaginas} concluída.`
-            );
-        }
-
-
-        /*
-        --------------------------------------------------------
-        TEXTO FINAL
-        --------------------------------------------------------
-        */
-
-        textoCompleto =
-            limparTextoOCR(
-                textoCompleto
-            );
-
-
-        rawText.value =
-            textoCompleto;
-
-
-        setProgress(
-            100,
-            "OCR concluído."
-        );
-
-
-        setStatus(
-            "OCR concluído. Organizando os dados da requisição...",
-            "ok"
-        );
-
-
-        /*
-        --------------------------------------------------------
-        EXTRAÇÃO
-        --------------------------------------------------------
-        */
-
-        const dados =
-            extrairRequisicao(
-                textoCompleto
-            );
-
-
-        resultadoAtual =
-            dados;
-
-
-        renderizarResultado(
-            dados
-        );
-
-
-        btnCopiar.disabled = false;
-        btnCSV.disabled =
-            dados.itens.length === 0;
-        btnTexto.disabled = false;
-
-
-        setStatus(
-            `Leitura concluída. ${dados.itens.length} item(ns) identificado(s).`,
-            "ok"
-        );
-
-    }
-
-    catch (erro) {
-
-        console.error(
-            "Erro durante processamento:",
-            erro
-        );
-
-
-        setStatus(
-            "Erro durante a leitura: " +
-            erro.message,
-            "error"
-        );
-
-
-        resultado.innerHTML = `
-            <div class="empty">
-                Não foi possível processar o PDF.
-                <br><br>
-                Abra o console do navegador (F12)
-                para ver detalhes técnicos.
-            </div>
-        `;
-
-    }
-
-    finally {
-
-        btnLer.disabled = false;
-
-    }
-
-}
-
-
-/*
-============================================================
-MELHORAR IMAGEM
-============================================================
-
-Converte para escala de cinza e aumenta o contraste.
-Isso ajuda bastante em documentos digitalizados.
-*/
-
-function melhorarImagem(canvas) {
-
-    const ctx =
-        canvas.getContext(
-            "2d",
-            {
-                willReadFrequently: true
-            }
-        );
-
-
-    const imagem =
-        ctx.getImageData(
-            0,
-            0,
-            canvas.width,
-            canvas.height
-        );
-
-
-    const data =
-        imagem.data;
-
-
-    for (
-        let i = 0;
-        i < data.length;
-        i += 4
-    ) {
-
-        const r = data[i];
-        const g = data[i + 1];
-        const b = data[i + 2];
-
-
-        /*
-        Luminância aproximada
-        */
-
-        let cinza =
-            0.299 * r +
-            0.587 * g +
-            0.114 * b;
-
-
-        /*
-        Aumenta contraste.
-        */
-
-        cinza =
-            ((cinza - 128) * 1.35) + 128;
-
-
-        cinza =
-            Math.max(
-                0,
-                Math.min(
-                    255,
-                    cinza
-                )
-            );
-
-
-        data[i] =
-            cinza;
-
-        data[i + 1] =
-            cinza;
-
-        data[i + 2] =
-            cinza;
-    }
-
-
-    ctx.putImageData(
-        imagem,
-        0,
-        0
-    );
-}
-
-
-/*
-============================================================
-LIMPEZA DO OCR
-============================================================
-*/
-
-function limparTextoOCR(texto) {
-
-    if (!texto) {
-        return "";
-    }
-
-
-    return texto
-
-        .replace(/\r/g, "")
-
-        /*
-        Remove espaços excessivos.
-        */
-
-        .replace(/[ \t]+/g, " ")
-
-        /*
-        Remove muitas linhas vazias.
-        */
-
-        .replace(/\n{4,}/g, "\n\n")
-
-        .trim();
-}
-
-
-/*
-============================================================
- EXTRAÇÃO DA REQUISIÇÃO
-============================================================
-*/
-
-function extrairRequisicao(texto) {
-
-    const resultado = {
-
-        requisicao: "",
-        solicitante: "",
-        contrato: "",
-        itens: []
+      itens:items
 
     };
 
 
-    /*
-    --------------------------------------------------------
-    REQUISIÇÃO
-    --------------------------------------------------------
-    */
+    /* ---------------------------------------------
+       DIAGNÓSTICO
+    --------------------------------------------- */
 
-    const rqPatterns = [
-
-        /N[ÚU]MERO\s+REQUISI[ÇC][ÃA]O\s*:?\s*(RQ[-\s]?\d+)/i,
-
-        /REQUISI[ÇC][ÃA]O\s*:?\s*(RQ[-\s]?\d+)/i,
-
-        /\b(RQ[-\s]?\d+)\b/i
-
-    ];
+    rawDiagnostic +=
+      "\n===== DIAGNÓSTICO DE PÁGINAS =====\n" +
+      pageResults
+        .map(
+          (p,i) =>
+            `Página ${i+1}: ${p.type}; itens=${p.items.length}`
+        )
+        .join("\n");
 
 
-    for (
-        const pattern of rqPatterns
-    ) {
-
-        const match =
-            texto.match(pattern);
+    render(data);
 
 
-        if (match) {
-
-            resultado.requisicao =
-                normalizarRQ(
-                    match[1]
-                );
-
-            break;
-        }
-
-    }
+    $("raw").textContent =
+      rawDiagnostic;
 
 
-    /*
-    --------------------------------------------------------
-    SOLICITANTE
-    --------------------------------------------------------
-    */
-
-    const solicitantePatterns = [
-
-        /SOLICITANTE\s*:?\s*([^\n]+)/i,
-
-        /SOLICITANTE\s*\n\s*([^\n]+)/i
-
-    ];
-
-
-    for (
-        const pattern
-        of solicitantePatterns
-    ) {
-
-        const match =
-            texto.match(
-                pattern
-            );
-
-
-        if (match) {
-
-            resultado.solicitante =
-                limparCampo(
-                    match[1]
-                );
-
-            break;
-        }
-
-    }
-
-
-    /*
-    --------------------------------------------------------
-    CONTRATO / UNIDADE
-    --------------------------------------------------------
-    */
-
-    const contratoPatterns = [
-
-        /CONTRATO\s*\/\s*UNIDADE\s*:?\s*([^\n]+)/i,
-
-        /CONTRATO\s*:?\s*([^\n]+)/i
-
-    ];
-
-
-    for (
-        const pattern
-        of contratoPatterns
-    ) {
-
-        const match =
-            texto.match(
-                pattern
-            );
-
-
-        if (match) {
-
-            resultado.contrato =
-                limparCampo(
-                    match[1]
-                );
-
-            break;
-        }
-
-    }
-
-
-    /*
-    --------------------------------------------------------
-    ITENS
-    --------------------------------------------------------
-
-    O OCR pode destruir a tabela original.
-    Portanto usamos várias estratégias.
-    */
-
-    resultado.itens =
-        extrairItensPorLinhas(
-            texto
-        );
-
-
-    /*
-    --------------------------------------------------------
-    COLABORADORES
-    --------------------------------------------------------
-    */
-
-    aplicarColaboradores(
-        texto,
-        resultado.itens
+    setProgress(
+      100,
+      `Concluído: ${items.length} item(ns) identificado(s) em ${pdf.numPages} página(s).`
     );
 
 
-    /*
-    --------------------------------------------------------
-    AGRUPAR DUPLICADOS
-    --------------------------------------------------------
-    */
+  }catch(err){
 
-    resultado.itens =
-        agruparItens(
-            resultado.itens
-        );
+    console.error(err);
 
 
-    return resultado;
+    status.innerHTML =
+      `<span class="error">
+        Erro: ${escapeHtml(err.message || err)}
+      </span>`;
+
+  }
+
 }
 
 
-/*
-============================================================
-NORMALIZAR RQ
-============================================================
-*/
+/* =========================================================
+   COPIAR JSON
+========================================================= */
 
-function normalizarRQ(valor) {
+$("copy").onclick =
+async () => {
 
-    return String(valor)
-        .toUpperCase()
-        .replace(/\s+/g, "")
-        .replace(/^RQ(\d+)$/, "RQ-$1")
-        .replace(/^RQ-(\d+)$/, "RQ-$1");
-}
+  if(!finalData){
+    return;
+  }
 
 
-/*
-============================================================
-LIMPAR CAMPO
-============================================================
-*/
+  await navigator.clipboard.writeText(
+    JSON.stringify(
+      finalData,
+      null,
+      2
+    )
+  );
 
-function limparCampo(valor) {
 
-    return String(valor)
-        .replace(/\s+/g, " ")
-        .replace(/^[:\-–—\s]+/, "")
-        .trim();
-}
+  status.textContent =
+    "JSON copiado.";
 
+};
 
-/*
-============================================================
-EXTRAIR ITENS
-============================================================
-*/
 
-function extrairItensPorLinhas(texto) {
+/* =========================================================
+   CSV
+========================================================= */
 
-    const itens = [];
+$("csv").onclick = () => {
 
-    const linhas =
-        texto
-            .split("\n")
-            .map(l => l.trim())
-            .filter(Boolean);
+  if(!finalData){
+    return;
+  }
 
 
-    /*
-    --------------------------------------------------------
-    PADRÕES POSSÍVEIS DE CÓDIGO
-    --------------------------------------------------------
+  const head = [
 
-    Aceita códigos com:
-    001234
-    123456
-    ABC123
-    01.234
-    etc.
-    */
+    "codigo",
+    "nome",
+    "tamanho",
+    "solicitado",
+    "aprovado",
+    "colaborador"
 
-    const codigoRegex =
-        /^([A-Z0-9][A-Z0-9.\-\/]{2,})\s+/i;
+  ];
 
 
-    for (
-        let i = 0;
-        i < linhas.length;
-        i++
-    ) {
+  const esc = v =>
+    `"${String(v ?? "").replace(/"/g,'""')}"`;
 
-        const linha =
-            linhas[i];
 
+  const lines = [
 
-        /*
-        Ignorar cabeçalhos.
-        */
+    head.join(";"),
 
-        if (
-            /C[ÓO]DIGO.*PRODUTO/i.test(linha) ||
-            /DESCRI[ÇC][ÃA]O/i.test(linha) ||
-            /TOTAL/i.test(linha) ||
-            /SOLICITANTE/i.test(linha) ||
-            /CONTRATO/i.test(linha)
-        ) {
+    ...finalData.itens.map(
+      r =>
+        head
+          .map(k=>esc(r[k]))
+          .join(";")
+    )
 
-            continue;
-        }
+  ];
 
 
-        const match =
-            linha.match(
-                codigoRegex
-            );
-
-
-        if (!match) {
-            continue;
-        }
-
-
-        const codigo =
-            match[1];
-
-
-        /*
-        Evitar capturar números aleatórios
-        do cabeçalho/documento.
-        */
-
-        if (
-            codigo.length < 3
-        ) {
-
-            continue;
-        }
-
-
-        const resto =
-            linha
-                .substring(
-                    match[0].length
-                )
-                .trim();
-
-
-        /*
-        ----------------------------------------------------
-        PROCURAR QUANTIDADE NO FINAL
-        ----------------------------------------------------
-        */
-
-        const quantidadeMatch =
-            resto.match(
-                /(?:\s|\|)+(\d+(?:[,.]\d+)?)\s*$/ 
-            );
-
-
-        let quantidade = null;
-        let nome = resto;
-
-
-        if (quantidadeMatch) {
-
-            quantidade =
-                quantidadeMatch[1]
-                    .replace(",", ".");
-
-
-            nome =
-                resto.substring(
-                    0,
-                    quantidadeMatch.index
-                ).trim();
-        }
-
-
-        /*
-        Outra possibilidade:
-        código | produto | quantidade
-        */
-
-        const partes =
-            resto
-                .split(/\s*\|\s*/);
-
-
-        if (
-            partes.length >= 2
-        ) {
-
-            const ultima =
-                partes[partes.length - 1];
-
-
-            if (
-                /^\d+(?:[,.]\d+)?$/.test(
-                    ultima
-                )
-            ) {
-
-                quantidade =
-                    ultima.replace(
-                        ",",
-                        "."
-                    );
-
-
-                nome =
-                    partes
-                        .slice(
-                            0,
-                            -1
-                        )
-                        .join(" | ")
-                        .trim();
-            }
-
-        }
-
-
-        /*
-        Se não encontrou quantidade,
-        tenta procurar nas próximas palavras.
-        */
-
-        if (
-            quantidade === null
-        ) {
-
-            const q =
-                resto.match(
-                    /\b(\d+)\b/
-                );
-
-
-            if (q) {
-
-                quantidade =
-                    q[1];
-
-                nome =
-                    resto
-                        .replace(
-                            q[0],
-                            ""
-                        )
-                        .trim();
-            }
-
-        }
-
-
-        if (
-            !nome ||
-            quantidade === null
-        ) {
-
-            continue;
-        }
-
-
-        /*
-        Evitar linhas obviamente não relacionadas
-        a produtos.
-        */
-
-        if (
-            nome.length < 2
-        ) {
-
-            continue;
-        }
-
-
-        itens.push({
-
-            codigo:
-                codigo.trim(),
-
-            nome:
-                limparCampo(nome),
-
-            solicitado:
-                quantidade,
-
-            colaborador: ""
-
-        });
-
-    }
-
-
-    return itens;
-}
-
-
-/*
-============================================================
-COLABORADORES
-============================================================
-*/
-
-function aplicarColaboradores(
-    texto,
-    itens
-) {
-
-    /*
-    Procura ocorrências de:
-
-    COLABORADOR: João
-    */
-
-    const encontrados = [];
-
-
-    const regex =
-        /COLABORADOR\s*:?\s*([^\n]+)/gi;
-
-
-    let match;
-
-
-    while (
-        (match = regex.exec(texto))
-        !== null
-    ) {
-
-        encontrados.push(
-            limparCampo(
-                match[1]
-            )
-        );
-
-    }
-
-
-    /*
-    Se encontrou colaboradores,
-    associa pela ordem dos itens.
-    */
-
-    for (
-        let i = 0;
-        i < itens.length &&
-        i < encontrados.length;
-        i++
-    ) {
-
-        itens[i].colaborador =
-            encontrados[i];
-
-    }
-}
-
-
-/*
-============================================================
-AGRUPAR DUPLICADOS
-============================================================
-*/
-
-function agruparItens(itens) {
-
-    const mapa =
-        new Map();
-
-
-    for (
-        const item of itens
-    ) {
-
-        const chave =
-            (
-                item.codigo +
-                "|" +
-                item.nome
-            ).toUpperCase();
-
-
-        if (
-            mapa.has(chave)
-        ) {
-
-            const existente =
-                mapa.get(chave);
-
-
-            const a =
-                Number(
-                    existente.solicitado
-                ) || 0;
-
-
-            const b =
-                Number(
-                    item.solicitado
-                ) || 0;
-
-
-            existente.solicitado =
-                a + b;
-
-        }
-
-        else {
-
-            mapa.set(
-                chave,
-                {
-                    ...item
-                }
-            );
-
-        }
-
-    }
-
-
-    return Array.from(
-        mapa.values()
+  const blob =
+    new Blob(
+      [
+        "\ufeff" +
+        lines.join("\n")
+      ],
+      {
+        type:
+          "text/csv;charset=utf-8"
+      }
     );
-}
 
 
-/*
-============================================================
-RENDERIZAR RESULTADO
-============================================================
-*/
+  const a =
+    document.createElement("a");
 
-function renderizarResultado(
-    dados
-) {
 
-    let html = `
+  a.href =
+    URL.createObjectURL(blob);
 
-        <div class="result-grid">
 
-            <div class="result-box">
+  a.download =
+    (
+      finalData.requisicao ||
+      "requisicao"
+    ) + ".csv";
 
-                <small>Requisição</small>
 
-                <strong>
-                    ${escapeHTML(
-                        dados.requisicao || "-"
-                    )}
-                </strong>
+  a.click();
 
-            </div>
 
+  URL.revokeObjectURL(a.href);
 
-            <div class="result-box">
+};
 
-                <small>Solicitante</small>
 
-                <strong>
-                    ${escapeHTML(
-                        dados.solicitante || "-"
-                    )}
-                </strong>
+/* =========================================================
+   OCR BRUTO
+========================================================= */
 
-            </div>
+$("toggleRaw").onclick = () => {
 
+  rawCard.classList.toggle("hidden");
 
-            <div class="result-box">
-
-                <small>Contrato / Unidade</small>
-
-                <strong>
-                    ${escapeHTML(
-                        dados.contrato || "-"
-                    )}
-                </strong>
-
-            </div>
-
-        </div>
-
-    `;
-
-
-    if (
-        !dados.itens.length
-    ) {
-
-        html += `
-
-            <div class="empty">
-
-                O OCR terminou, mas não conseguiu
-                identificar os itens automaticamente.
-
-                <br><br>
-
-                Clique em
-                <strong>Mostrar texto OCR</strong>
-                para verificar o texto reconhecido.
-
-            </div>
-
-        `;
-
-    }
-
-    else {
-
-        html += `
-
-            <div class="table-wrapper">
-
-                <table>
-
-                    <thead>
-
-                        <tr>
-
-                            <th>Código</th>
-
-                            <th>Produto</th>
-
-                            <th>Quantidade</th>
-
-                            <th>Colaborador</th>
-
-                        </tr>
-
-                    </thead>
-
-                    <tbody>
-
-        `;
-
-
-        for (
-            const item of dados.itens
-        ) {
-
-            html += `
-
-                <tr>
-
-                    <td>
-                        ${escapeHTML(
-                            item.codigo
-                        )}
-                    </td>
-
-                    <td>
-                        ${escapeHTML(
-                            item.nome
-                        )}
-                    </td>
-
-                    <td>
-                        ${escapeHTML(
-                            String(
-                                item.solicitado
-                            )
-                        )}
-                    </td>
-
-                    <td>
-                        ${escapeHTML(
-                            item.colaborador || "-"
-                        )}
-                    </td>
-
-                </tr>
-
-            `;
-
-        }
-
-
-        html += `
-
-                    </tbody>
-
-                </table>
-
-            </div>
-
-        `;
-
-    }
-
-
-    resultado.innerHTML =
-        html;
-}
-
-
-/*
-============================================================
-ESCAPE HTML
-============================================================
-*/
-
-function escapeHTML(valor) {
-
-    return String(valor)
-
-        .replace(
-            /&/g,
-            "&amp;"
-        )
-
-        .replace(
-            /</g,
-            "&lt;"
-        )
-
-        .replace(
-            />/g,
-            "&gt;"
-        )
-
-        .replace(
-            /"/g,
-            "&quot;"
-        )
-
-        .replace(
-            /'/g,
-            "&#039;"
-        );
-}
-
-
-/*
-============================================================
-COPIAR
-============================================================
-*/
-
-btnCopiar.addEventListener(
-    "click",
-    async () => {
-
-        if (!resultadoAtual) {
-            return;
-        }
-
-
-        let texto =
-
-            "REQUISIÇÃO: " +
-            resultadoAtual.requisicao +
-            "\n" +
-
-            "SOLICITANTE: " +
-            resultadoAtual.solicitante +
-            "\n" +
-
-            "CONTRATO / UNIDADE: " +
-            resultadoAtual.contrato +
-            "\n\n";
-
-
-        texto +=
-            "CÓDIGO | PRODUTO | QUANTIDADE | COLABORADOR\n";
-
-
-        for (
-            const item
-            of resultadoAtual.itens
-        ) {
-
-            texto +=
-
-                item.codigo +
-                " | " +
-
-                item.nome +
-                " | " +
-
-                item.solicitado +
-                " | " +
-
-                (item.colaborador || "") +
-                "\n";
-
-        }
-
-
-        try {
-
-            await navigator.clipboard.writeText(
-                texto
-            );
-
-
-            setStatus(
-                "Resultado copiado para a área de transferência.",
-                "ok"
-            );
-
-        }
-
-        catch {
-
-            setStatus(
-                "Não foi possível copiar automaticamente.",
-                "error"
-            );
-
-        }
-
-    }
-);
-
-
-/*
-============================================================
-EXPORTAR CSV
-============================================================
-*/
-
-btnCSV.addEventListener(
-    "click",
-    () => {
-
-        if (
-            !resultadoAtual ||
-            !resultadoAtual.itens.length
-        ) {
-
-            return;
-        }
-
-
-        let csv =
-            "Requisicao;Solicitante;Contrato;Codigo;Produto;Quantidade;Colaborador\n";
-
-
-        for (
-            const item
-            of resultadoAtual.itens
-        ) {
-
-            csv +=
-
-                csvCampo(
-                    resultadoAtual.requisicao
-                ) +
-
-                ";" +
-
-                csvCampo(
-                    resultadoAtual.solicitante
-                ) +
-
-                ";" +
-
-                csvCampo(
-                    resultadoAtual.contrato
-                ) +
-
-                ";" +
-
-                csvCampo(
-                    item.codigo
-                ) +
-
-                ";" +
-
-                csvCampo(
-                    item.nome
-                ) +
-
-                ";" +
-
-                csvCampo(
-                    item.solicitado
-                ) +
-
-                ";" +
-
-                csvCampo(
-                    item.colaborador
-                ) +
-
-                "\n";
-
-        }
-
-
-        const blob =
-            new Blob(
-                ["\uFEFF" + csv],
-                {
-                    type:
-                        "text/csv;charset=utf-8;"
-                }
-            );
-
-
-        const url =
-            URL.createObjectURL(
-                blob
-            );
-
-
-        const link =
-            document.createElement(
-                "a"
-            );
-
-
-        link.href =
-            url;
-
-        link.download =
-            (
-                resultadoAtual.requisicao ||
-                "requisicao"
-            ) +
-            ".csv";
-
-
-        link.click();
-
-
-        URL.revokeObjectURL(
-            url
-        );
-
-    }
-);
-
-
-function csvCampo(valor) {
-
-    return '"' +
-        String(
-            valor ?? ""
-        )
-        .replace(
-            /"/g,
-            '""'
-        ) +
-        '"';
-}
-
-
-/*
-============================================================
-MOSTRAR / OCULTAR OCR
-============================================================
-*/
-
-btnTexto.addEventListener(
-    "click",
-    () => {
-
-        if (
-            rawArea.style.display ===
-            "block"
-        ) {
-
-            rawArea.style.display =
-                "none";
-
-            btnTexto.textContent =
-                "Mostrar texto OCR";
-
-        }
-
-        else {
-
-            rawArea.style.display =
-                "block";
-
-            btnTexto.textContent =
-                "Ocultar texto OCR";
-
-        }
-
-    }
-);
-
-
-/*
-============================================================
-LIMPAR
-============================================================
-*/
-
-btnLimpar.addEventListener(
-    "click",
-    () => {
-
-        arquivoSelecionado = null;
-        resultadoAtual = null;
-
-        fileInput.value = "";
-
-        fileInfo.textContent =
-            "Nenhum arquivo selecionado.";
-
-        resultado.innerHTML = `
-
-            <div class="empty">
-                Nenhuma requisição processada.
-            </div>
-
-        `;
-
-        rawText.value = "";
-
-        rawArea.style.display =
-            "none";
-
-        btnLer.disabled = true;
-        btnCopiar.disabled = true;
-        btnCSV.disabled = true;
-        btnTexto.disabled = true;
-
-        setStatus(
-            "Selecione um PDF para começar."
-        );
-
-        setProgress(
-            0,
-            "Aguardando arquivo."
-        );
-
-    }
-);
+};
 
 </script>
 
