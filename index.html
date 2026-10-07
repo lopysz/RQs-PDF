@@ -1,0 +1,2317 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<title>Leitor de Requisições</title>
+
+<style>
+
+:root{
+  --bg:#f4f7f5;
+  --card:#ffffff;
+  --line:#dfe6e2;
+  --text:#18221d;
+  --muted:#66736c;
+  --green:#27864d;
+  --green-light:#dff3e6;
+  --danger:#b42318;
+}
+
+*{
+  box-sizing:border-box;
+}
+
+body{
+  margin:0;
+  background:var(--bg);
+  color:var(--text);
+  font-family:Arial,Helvetica,sans-serif;
+}
+
+.wrap{
+  max-width:1150px;
+  margin:auto;
+  padding:25px;
+}
+
+h1{
+  margin:0 0 6px;
+  font-size:27px;
+}
+
+.subtitle{
+  color:var(--muted);
+  margin-bottom:20px;
+}
+
+.card{
+  background:var(--card);
+  border:1px solid var(--line);
+  border-radius:14px;
+  padding:18px;
+  margin-bottom:16px;
+  box-shadow:0 2px 8px #00000008;
+}
+
+.drop{
+  display:block;
+  border:2px dashed #aebbb3;
+  border-radius:12px;
+  padding:35px 20px;
+  text-align:center;
+  cursor:pointer;
+  background:#fbfdfb;
+}
+
+.drop.drag{
+  border-color:var(--green);
+  background:var(--green-light);
+}
+
+.drop strong{
+  display:block;
+  font-size:18px;
+  margin-bottom:7px;
+}
+
+.drop span{
+  color:var(--muted);
+}
+
+input[type="file"]{
+  display:none;
+}
+
+.progress{
+  height:10px;
+  background:#e7ece9;
+  border-radius:50px;
+  overflow:hidden;
+  margin-top:14px;
+}
+
+.bar{
+  width:0%;
+  height:100%;
+  background:var(--green);
+  transition:width .2s;
+}
+
+.status{
+  margin-top:9px;
+  min-height:20px;
+  font-size:14px;
+  color:var(--muted);
+}
+
+button{
+  border:0;
+  border-radius:9px;
+  padding:10px 15px;
+  background:var(--green);
+  color:white;
+  font-weight:bold;
+  cursor:pointer;
+}
+
+button.secondary{
+  background:#e8eee9;
+  color:#24332a;
+}
+
+.row{
+  display:flex;
+  flex-wrap:wrap;
+  gap:10px;
+}
+
+.grid{
+  display:grid;
+  grid-template-columns:repeat(3,1fr);
+  gap:10px;
+}
+
+.field{
+  background:#f7f9f7;
+  border:1px solid var(--line);
+  border-radius:9px;
+  padding:10px;
+}
+
+.label{
+  font-size:11px;
+  color:var(--muted);
+  text-transform:uppercase;
+}
+
+.value{
+  margin-top:4px;
+  font-weight:bold;
+  word-break:break-word;
+}
+
+.table-wrap{
+  overflow:auto;
+  border:1px solid var(--line);
+  border-radius:10px;
+}
+
+table{
+  width:100%;
+  min-width:900px;
+  border-collapse:collapse;
+}
+
+th,
+td{
+  padding:9px 10px;
+  border-bottom:1px solid var(--line);
+  text-align:left;
+  font-size:14px;
+}
+
+th{
+  background:#eef4ef;
+  color:#516058;
+  font-size:12px;
+  text-transform:uppercase;
+}
+
+tr:last-child td{
+  border-bottom:0;
+}
+
+pre{
+  background:#101512;
+  color:#d8e8dd;
+  border-radius:10px;
+  padding:14px;
+  max-height:400px;
+  overflow:auto;
+  white-space:pre-wrap;
+  word-break:break-word;
+  font-size:12px;
+}
+
+.hidden{
+  display:none;
+}
+
+.error{
+  color:var(--danger);
+  font-weight:bold;
+}
+
+.small{
+  color:var(--muted);
+  font-size:12px;
+}
+
+/* VERSÃO */
+
+.version{
+  position:fixed;
+  left:10px;
+  bottom:10px;
+  z-index:9999;
+
+  padding:4px 8px;
+
+  font-size:12px;
+  color:#66736c;
+
+  background:#ffffffee;
+
+  border:1px solid #dfe6e2;
+  border-radius:6px;
+
+  box-shadow:0 2px 5px #00000012;
+}
+
+@media(max-width:700px){
+
+  .wrap{
+    padding:12px;
+  }
+
+  .grid{
+    grid-template-columns:1fr;
+  }
+
+}
+
+</style>
+</head>
+
+<body>
+
+<div class="version">Versão 1.2</div>
+
+<div class="wrap">
+
+  <h1>Leitor de Requisições</h1>
+
+  <div class="subtitle">
+    Leitura de requisições PDF através de OCR.
+  </div>
+
+
+  <!-- UPLOAD -->
+
+  <div class="card">
+
+    <label class="drop" id="drop">
+
+      <strong>
+        Selecione ou arraste uma requisição PDF
+      </strong>
+
+      <span>
+        O processamento acontece diretamente no navegador.
+      </span>
+
+      <input
+        id="file"
+        type="file"
+        accept=".pdf,application/pdf"
+      >
+
+    </label>
+
+
+    <div class="progress">
+
+      <div
+        class="bar"
+        id="bar">
+      </div>
+
+    </div>
+
+
+    <div
+      class="status"
+      id="status">
+
+      Aguardando PDF.
+
+    </div>
+
+  </div>
+
+
+  <!-- BOTÕES -->
+
+  <div
+    class="card hidden"
+    id="actions">
+
+    <div class="row">
+
+      <button id="copy">
+        Copiar JSON
+      </button>
+
+      <button
+        class="secondary"
+        id="csv">
+
+        Exportar CSV
+
+      </button>
+
+      <button
+        class="secondary"
+        id="toggleRaw">
+
+        Mostrar OCR
+
+      </button>
+
+    </div>
+
+  </div>
+
+
+  <!-- RESULTADO -->
+
+  <div
+    class="card hidden"
+    id="result">
+
+    <h2>Resultado</h2>
+
+
+    <div
+      class="grid"
+      id="meta">
+    </div>
+
+
+    <h3>Itens</h3>
+
+
+    <div class="table-wrap">
+
+      <table>
+
+        <thead>
+
+          <tr>
+
+            <th>Código</th>
+
+            <th>Item</th>
+
+            <th>Tamanho</th>
+
+            <th>Solicitado</th>
+
+            <th>Aprovado</th>
+
+            <th>Colaborador</th>
+
+          </tr>
+
+        </thead>
+
+
+        <tbody id="tbody"></tbody>
+
+      </table>
+
+    </div>
+
+
+    <p
+      class="small"
+      id="info">
+    </p>
+
+  </div>
+
+
+  <!-- OCR -->
+
+  <div
+    class="card hidden"
+    id="rawCard">
+
+    <h3>OCR bruto</h3>
+
+    <pre id="raw"></pre>
+
+  </div>
+
+</div>
+
+
+<script type="module">
+
+
+/* =====================================================
+   PDF.JS
+===================================================== */
+
+import * as pdfjsLib from
+"https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.10.38/pdf.min.mjs";
+
+
+pdfjsLib.GlobalWorkerOptions.workerSrc =
+"https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.10.38/pdf.worker.min.mjs";
+
+
+/* =====================================================
+   TESSERACT.JS
+===================================================== */
+
+const TesseractModule =
+await import(
+  "https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.esm.min.js"
+);
+
+
+const Tesseract =
+TesseractModule.default ||
+TesseractModule;
+
+
+/* =====================================================
+   ELEMENTOS
+===================================================== */
+
+const $ =
+id =>
+document.getElementById(id);
+
+
+const drop =
+$("drop");
+
+const fileInput =
+$("file");
+
+const bar =
+$("bar");
+
+const status =
+$("status");
+
+const resultBox =
+$("result");
+
+const actions =
+$("actions");
+
+const rawCard =
+$("rawCard");
+
+
+let finalData =
+null;
+
+let rawDiagnostic =
+"";
+
+
+/* =====================================================
+   UPLOAD
+===================================================== */
+
+drop.addEventListener(
+  "click",
+  e => {
+
+    if(e.target !== fileInput){
+
+      fileInput.click();
+
+    }
+
+  }
+);
+
+
+fileInput.addEventListener(
+  "change",
+  e => {
+
+    if(e.target.files[0]){
+
+      processPDF(
+        e.target.files[0]
+      );
+
+    }
+
+  }
+);
+
+
+[
+  "dragenter",
+  "dragover"
+].forEach(
+  eventName => {
+
+    drop.addEventListener(
+      eventName,
+      e => {
+
+        e.preventDefault();
+
+        drop.classList.add(
+          "drag"
+        );
+
+      }
+    );
+
+  }
+);
+
+
+[
+  "dragleave",
+  "drop"
+].forEach(
+  eventName => {
+
+    drop.addEventListener(
+      eventName,
+      e => {
+
+        e.preventDefault();
+
+        drop.classList.remove(
+          "drag"
+        );
+
+      }
+    );
+
+  }
+);
+
+
+drop.addEventListener(
+  "drop",
+  e => {
+
+    const file =
+      e.dataTransfer.files[0];
+
+
+    if(
+      file &&
+      (
+        file.type ===
+        "application/pdf"
+        ||
+        /\.pdf$/i.test(
+          file.name
+        )
+      )
+    ){
+
+      processPDF(file);
+
+    }
+
+  }
+);
+
+
+/* =====================================================
+   PROGRESSO
+===================================================== */
+
+function setProgress(
+  value,
+  message
+){
+
+  bar.style.width =
+    Math.max(
+      0,
+      Math.min(
+        100,
+        value
+      )
+    ) + "%";
+
+
+  status.textContent =
+    message;
+
+}
+
+
+/* =====================================================
+   NORMALIZAÇÃO
+===================================================== */
+
+function normalize(
+  text
+){
+
+  return String(
+    text || ""
+  )
+  .normalize("NFD")
+  .replace(
+    /[\u0300-\u036f]/g,
+    ""
+  )
+  .toUpperCase()
+  .trim();
+
+}
+
+
+function clean(
+  text
+){
+
+  return String(
+    text || ""
+  )
+  .replace(
+    /\s+/g,
+    " "
+  )
+  .trim();
+
+}
+
+
+/* =====================================================
+   CÓDIGOS
+===================================================== */
+
+function isProductCode(
+  text
+){
+
+  const value =
+    String(
+      text || ""
+    )
+    .replace(
+      /\s/g,
+      ""
+    );
+
+
+  return /^\d{6,12}$/.test(
+    value
+  );
+
+}
+
+
+/* =====================================================
+   TAMANHO
+===================================================== */
+
+function extractSize(
+  text
+){
+
+  const match =
+    String(
+      text || ""
+    ).match(
+      /\(\s*(\d{1,3})\s*\)/
+    );
+
+
+  if(match){
+
+    return match[1];
+
+  }
+
+
+  return "";
+
+}
+
+
+/* =====================================================
+   NOME DO ITEM
+===================================================== */
+
+function extractItemName(
+  text
+){
+
+  let value =
+    clean(text);
+
+
+  value =
+    value.replace(
+      /\s*\(\s*\d{1,3}\s*\)\s*/g,
+      " "
+    );
+
+
+  value =
+    value.replace(
+      /^\d+\s+/,
+      ""
+    );
+
+
+  value =
+    value.replace(
+      /COLABORADOR.*$/i,
+      ""
+    );
+
+
+  return clean(value);
+
+}
+
+
+/* =====================================================
+   LINHAS OCR
+===================================================== */
+
+function createLines(
+  words
+){
+
+  const lines = [];
+
+
+  const sorted =
+    [...words].sort(
+      (a,b) =>
+        a.cy-b.cy ||
+        a.x0-b.x0
+    );
+
+
+  for(
+    const word of sorted
+  ){
+
+    let line =
+      lines.find(
+        l =>
+          Math.abs(
+            l.cy-word.cy
+          )
+          <=
+          Math.max(
+            8,
+            word.h*.55
+          )
+      );
+
+
+    if(!line){
+
+      line = {
+
+        cy:word.cy,
+
+        words:[]
+
+      };
+
+
+      lines.push(
+        line
+      );
+
+    }
+
+
+    line.words.push(
+      word
+    );
+
+
+    line.cy =
+      line.words.reduce(
+        (sum,w) =>
+          sum+w.cy,
+        0
+      )
+      /
+      line.words.length;
+
+  }
+
+
+  for(
+    const line of lines
+  ){
+
+    line.words.sort(
+      (a,b)=>
+        a.x0-b.x0
+    );
+
+  }
+
+
+  return lines.sort(
+    (a,b)=>
+      a.cy-b.cy
+  );
+
+}
+
+
+function lineText(
+  line
+){
+
+  return clean(
+    line.words
+      .map(
+        w=>w.text
+      )
+      .join(" ")
+  );
+
+}
+
+
+/* =====================================================
+   COLABORADORES
+===================================================== */
+
+function findCollaborators(
+  lines
+){
+
+  const result = [];
+
+
+  for(
+    let i=0;
+    i<lines.length;
+    i++
+  ){
+
+    const text =
+      lineText(
+        lines[i]
+      );
+
+
+    if(
+      normalize(text)
+        .includes(
+          "COLABORADOR"
+        )
+    ){
+
+      let name =
+        text.replace(
+          /.*COLABORADOR\s*:?\s*/i,
+          ""
+        );
+
+
+      name =
+        clean(name);
+
+
+      if(
+        !name &&
+        lines[i+1]
+      ){
+
+        name =
+          lineText(
+            lines[i+1]
+          );
+
+      }
+
+
+      if(name){
+
+        result.push({
+
+          y:
+            lines[i].cy,
+
+          name:
+            name
+
+        });
+
+      }
+
+    }
+
+  }
+
+
+  return result;
+
+}
+
+
+/* =====================================================
+   ITENS
+===================================================== */
+
+function extractItems(
+  words,
+  lines
+){
+
+  const codes =
+    words.filter(
+      w =>
+        isProductCode(
+          w.text
+        )
+    );
+
+
+  const collaborators =
+    findCollaborators(
+      lines
+    );
+
+
+  const items = [];
+
+
+  for(
+    const codeWord of codes
+  ){
+
+    const code =
+      codeWord.text
+        .replace(
+          /\s/g,
+          ""
+        );
+
+
+    const y =
+      codeWord.cy;
+
+
+    /*
+      Não processa o mesmo código
+      duas vezes na mesma linha.
+    */
+
+    if(
+      items.some(
+        item =>
+          item.codigo === code &&
+          Math.abs(
+            item.y-y
+          ) < 15
+      )
+    ){
+
+      continue;
+
+    }
+
+
+    /*
+      Palavras próximas ao código.
+    */
+
+    const nearby =
+      words
+        .filter(
+          word =>
+            Math.abs(
+              word.cy-y
+            ) <= 38
+        )
+        .sort(
+          (a,b)=>
+            a.x0-b.x0
+        );
+
+
+    /*
+      Descrição do item.
+
+      O OCR da sua RQ mostrou
+      duas possibilidades:
+
+      SAPATO E.V.A. (34)
+      00801856
+
+      ou
+
+      008001138
+      BOTINA DE COURO (43)
+    */
+
+    const descriptionWords =
+      nearby.filter(
+        word => {
+
+          if(
+            word === codeWord
+          ){
+
+            return false;
+
+          }
+
+
+          if(
+            isProductCode(
+              word.text
+            )
+          ){
+
+            return false;
+
+          }
+
+
+          const normalized =
+            normalize(
+              word.text
+            );
+
+
+          if(
+            normalized ===
+              "COLABORADOR"
+          ){
+
+            return false;
+
+          }
+
+
+          if(
+            normalized === ":"
+          ){
+
+            return false;
+
+          }
+
+
+          /*
+            Pequenos números "1"
+            das colunas de quantidade
+            não fazem parte do item.
+          */
+
+          if(
+            /^\d{1,2}$/.test(
+              word.text
+            )
+            &&
+            !/\(\d{1,3}\)/.test(
+              word.text
+            )
+          ){
+
+            return false;
+
+          }
+
+
+          return true;
+
+        }
+      );
+
+
+    let description =
+      clean(
+        descriptionWords
+          .map(
+            word =>
+              word.text
+          )
+          .join(" ")
+      );
+
+
+    /*
+      Retira tudo depois de
+      COLABORADOR caso tenha
+      entrado na mesma linha.
+    */
+
+    description =
+      description.replace(
+        /COLABORADOR.*$/i,
+        ""
+      );
+
+
+    description =
+      clean(description);
+
+
+    const tamanho =
+      extractSize(
+        description
+      );
+
+
+    const nome =
+      extractItemName(
+        description
+      );
+
+
+    /*
+      COLABORADOR
+
+      Procura o primeiro colaborador
+      que aparece depois do item.
+    */
+
+    let collaborator =
+      "";
+
+
+    const possible =
+      collaborators
+        .filter(
+          person =>
+            person.y >= y-20
+        )
+        .sort(
+          (a,b)=>
+            a.y-b.y
+        );
+
+
+    if(possible.length){
+
+      collaborator =
+        possible[0].name;
+
+    }
+
+
+    /*
+      Nesta versão usamos 1/1
+      como padrão porque a RQ
+      analisada possui uma unidade
+      solicitada e uma aprovada
+      em cada linha.
+    */
+
+    const solicitado = 1;
+
+    const aprovado = 1;
+
+
+    items.push({
+
+      codigo:code,
+
+      nome:nome,
+
+      tamanho:tamanho,
+
+      solicitado:
+
+        solicitado,
+
+      aprovado:
+
+        aprovado,
+
+      colaborador:
+
+        collaborator,
+
+      y:y
+
+    });
+
+  }
+
+
+  /*
+    Mantém a ordem vertical
+    da página.
+  */
+
+  items.sort(
+    (a,b)=>
+      a.y-b.y
+  );
+
+
+  return items;
+
+}
+
+
+/* =====================================================
+   PÁGINA DE RESUMO
+===================================================== */
+
+function isSummaryPage(
+  text
+){
+
+  const n =
+    normalize(text);
+
+
+  return (
+
+    n.includes(
+      "QUADRO DE RESUMO"
+    )
+
+    ||
+
+    n.includes(
+      "RESUMO TOTAL"
+    )
+
+    ||
+
+    n.includes(
+      "TOTAL DE ITENS APROVADOS"
+    )
+
+  );
+
+}
+
+
+/* =====================================================
+   METADADOS
+===================================================== */
+
+function extractMeta(
+  text
+){
+
+  const get =
+  patterns => {
+
+    for(
+      const pattern of patterns
+    ){
+
+      const match =
+        text.match(
+          pattern
+        );
+
+
+      if(match){
+
+        return clean(
+          match[1]
+        );
+
+      }
+
+    }
+
+
+    return "";
+
+  };
+
+
+  return {
+
+    solicitante:
+      get([
+        /SOLICITANTE\s*:?\s*([^\n]+)/i
+      ]),
+
+
+    contrato:
+      get([
+        /CONTRATO\s*\/\s*UNIDADE\s*:?\s*([^\n]+)/i,
+
+        /CONTRATO\s*:?\s*([^\n]+)/i
+      ]),
+
+
+    requisicao:
+      get([
+        /N[ÚU]MERO\s+REQUISI[CÇ][AÃ]O\s*:?\s*(RQ[-\s]?\d+)/i,
+
+        /\b(RQ[-\s]?\d{3,})\b/i
+      ])
+
+  };
+
+}
+
+
+/* =====================================================
+   OCR
+===================================================== */
+
+async function recognizePage(
+  canvas,
+  pageNumber,
+  totalPages
+){
+
+  /*
+    CORREÇÃO DA VERSÃO 1.2
+
+    Dependendo da forma como o
+    navegador importa o Tesseract,
+    createWorker pode estar:
+
+    Tesseract.createWorker
+
+    ou
+
+    TesseractModule.createWorker
+  */
+
+  const createWorker =
+    Tesseract.createWorker ||
+    TesseractModule.createWorker;
+
+
+  if(
+    typeof createWorker !==
+    "function"
+  ){
+
+    throw new Error(
+      "Não foi possível carregar o Tesseract.js. createWorker não foi encontrado."
+    );
+
+  }
+
+
+  const worker =
+    await createWorker(
+      "por",
+      1,
+      {
+
+        logger:
+          message => {
+
+            if(
+              message.status ===
+              "recognizing text"
+            ){
+
+              const local =
+                (
+                  message.progress ||
+                  0
+                ) * 100;
+
+
+              const global =
+                (
+                  (
+                    pageNumber-1
+                  )
+                  +
+                  local/100
+                )
+                /
+                totalPages
+                *100;
+
+
+              setProgress(
+                global,
+
+                `OCR página ${pageNumber}/${totalPages}: ${local.toFixed(0)}%`
+              );
+
+            }
+
+          }
+
+      }
+    );
+
+
+  await worker.setParameters({
+
+    tessedit_pageseg_mode:
+      "6",
+
+    preserve_interword_spaces:
+      "1"
+
+  });
+
+
+  const result =
+    await worker.recognize(
+      canvas
+    );
+
+
+  await worker.terminate();
+
+
+  const words =
+    (
+      result.data.words ||
+      []
+    )
+    .map(
+      word => ({
+
+        text:
+          word.text,
+
+        x0:
+          word.bbox.x0,
+
+        x1:
+          word.bbox.x1,
+
+        y0:
+          word.bbox.y0,
+
+        y1:
+          word.bbox.y1,
+
+        w:
+          word.bbox.x1 -
+          word.bbox.x0,
+
+        h:
+          word.bbox.y1 -
+          word.bbox.y0,
+
+        cy:
+          (
+            word.bbox.y0 +
+            word.bbox.y1
+          )/2
+
+      })
+    )
+    .filter(
+      word =>
+        word.text.trim()
+    );
+
+
+  return {
+
+    text:
+      result.data.text ||
+      "",
+
+    words:
+      words
+
+  };
+
+}
+
+
+/* =====================================================
+   PREPROCESSAMENTO
+===================================================== */
+
+function preprocess(
+  source
+){
+
+  const canvas =
+    document.createElement(
+      "canvas"
+    );
+
+
+  canvas.width =
+    source.width;
+
+  canvas.height =
+    source.height;
+
+
+  const ctx =
+    canvas.getContext(
+      "2d",
+      {
+        willReadFrequently:
+          true
+      }
+    );
+
+
+  ctx.drawImage(
+    source,
+    0,
+    0
+  );
+
+
+  const image =
+    ctx.getImageData(
+      0,
+      0,
+      canvas.width,
+      canvas.height
+    );
+
+
+  const data =
+    image.data;
+
+
+  for(
+    let i=0;
+    i<data.length;
+    i+=4
+  ){
+
+    const gray =
+      0.299*data[i]
+      +
+      0.587*data[i+1]
+      +
+      0.114*data[i+2];
+
+
+    let value =
+      (
+        gray-128
+      )*1.35+128;
+
+
+    value =
+      Math.max(
+        0,
+        Math.min(
+          255,
+          value
+        )
+      );
+
+
+    data[i] =
+      value;
+
+    data[i+1] =
+      value;
+
+    data[i+2] =
+      value;
+
+  }
+
+
+  ctx.putImageData(
+    image,
+    0,
+    0
+  );
+
+
+  return canvas;
+
+}
+
+
+/* =====================================================
+   PROCESSAR PDF
+===================================================== */
+
+async function processPDF(
+  file
+){
+
+  resultBox.classList.add(
+    "hidden"
+  );
+
+  actions.classList.add(
+    "hidden"
+  );
+
+  rawCard.classList.add(
+    "hidden"
+  );
+
+
+  rawDiagnostic = "";
+
+
+  setProgress(
+    2,
+    "Abrindo PDF..."
+  );
+
+
+  try{
+
+    const buffer =
+      await file.arrayBuffer();
+
+
+    const pdf =
+      await pdfjsLib
+        .getDocument({
+          data:buffer
+        })
+        .promise;
+
+
+    const canvases = [];
+
+
+    /* -----------------------------------------------
+       RENDERIZAÇÃO
+    ------------------------------------------------ */
+
+    for(
+      let pageNumber=1;
+      pageNumber<=pdf.numPages;
+      pageNumber++
+    ){
+
+      setProgress(
+        (
+          pageNumber-1
+        )
+        /
+        pdf.numPages
+        *15,
+
+        `Renderizando página ${pageNumber}/${pdf.numPages}...`
+      );
+
+
+      const page =
+        await pdf.getPage(
+          pageNumber
+        );
+
+
+      const viewport =
+        page.getViewport({
+          scale:2.7
+        });
+
+
+      const canvas =
+        document.createElement(
+          "canvas"
+        );
+
+
+      canvas.width =
+        Math.ceil(
+          viewport.width
+        );
+
+
+      canvas.height =
+        Math.ceil(
+          viewport.height
+        );
+
+
+      await page.render({
+
+        canvasContext:
+          canvas.getContext(
+            "2d"
+          ),
+
+        viewport:
+          viewport
+
+      }).promise;
+
+
+      canvases.push(
+        preprocess(
+          canvas
+        )
+      );
+
+    }
+
+
+    /* -----------------------------------------------
+       OCR
+    ------------------------------------------------ */
+
+    const pages = [];
+
+
+    for(
+      let i=0;
+      i<canvases.length;
+      i++
+    ){
+
+      const ocr =
+        await recognizePage(
+          canvases[i],
+          i+1,
+          canvases.length
+        );
+
+
+      const lines =
+        createLines(
+          ocr.words
+        );
+
+
+      const summary =
+        isSummaryPage(
+          ocr.text
+        );
+
+
+      let items = [];
+
+
+      if(!summary){
+
+        items =
+          extractItems(
+            ocr.words,
+            lines
+          );
+
+      }
+
+
+      pages.push({
+
+        page:
+          i+1,
+
+        text:
+          ocr.text,
+
+        summary:
+          summary,
+
+        items:
+          items
+
+      });
+
+
+      rawDiagnostic +=
+
+        `\n===== PÁGINA ${i+1} =====\n\n`
+
+        +
+
+        ocr.text
+
+        +
+
+        "\n";
+
+    }
+
+
+    /* -----------------------------------------------
+       METADADOS
+    ------------------------------------------------ */
+
+    setProgress(
+      96,
+      "Organizando resultado..."
+    );
+
+
+    const allText =
+      pages
+        .map(
+          page =>
+            page.text
+        )
+        .join("\n");
+
+
+    const meta =
+      extractMeta(
+        allText
+      );
+
+
+    /* -----------------------------------------------
+       ITENS
+    ------------------------------------------------ */
+
+    let items =
+      pages
+        .filter(
+          page =>
+            !page.summary
+        )
+        .flatMap(
+          page =>
+            page.items
+        );
+
+
+    /*
+      Remove duplicações exatas.
+    */
+
+    const unique = [];
+
+
+    for(
+      const item of items
+    ){
+
+      const duplicate =
+        unique.find(
+          existing =>
+
+            existing.codigo ===
+            item.codigo
+
+            &&
+
+            existing.colaborador ===
+            item.colaborador
+
+            &&
+
+            Math.abs(
+              existing.y -
+              item.y
+            ) < 15
+        );
+
+
+      if(!duplicate){
+
+        unique.push(
+          item
+        );
+
+      }
+
+    }
+
+
+    items =
+      unique.map(
+        item => ({
+
+          codigo:
+            item.codigo,
+
+          nome:
+            item.nome,
+
+          tamanho:
+            item.tamanho,
+
+          solicitado:
+            item.solicitado,
+
+          aprovado:
+            item.aprovado,
+
+          colaborador:
+            item.colaborador
+
+        })
+      );
+
+
+    finalData = {
+
+      solicitante:
+        meta.solicitante,
+
+      contrato:
+        meta.contrato,
+
+      requisicao:
+        meta.requisicao,
+
+      itens:
+        items
+
+    };
+
+
+    renderResult(
+      finalData
+    );
+
+
+    rawDiagnostic +=
+
+      "\n===== DIAGNÓSTICO =====\n\n"
+
+      +
+
+      pages
+        .map(
+          page =>
+
+            `Página ${page.page}: ` +
+
+            (
+              page.summary
+
+                ?
+
+              "RESUMO IGNORADO"
+
+                :
+
+              `${page.items.length} item(ns)`
+            )
+        )
+        .join("\n");
+
+
+    $("raw").textContent =
+      rawDiagnostic;
+
+
+    setProgress(
+      100,
+
+      `Concluído: ${items.length} item(ns) encontrado(s).`
+    );
+
+
+  }catch(error){
+
+    console.error(
+      error
+    );
+
+
+    status.innerHTML =
+      `<span class="error">
+        Erro: ${escapeHTML(
+          error.message ||
+          error
+        )}
+      </span>`;
+
+  }
+
+}
+
+
+/* =====================================================
+   ESCAPE HTML
+===================================================== */
+
+function escapeHTML(
+  value
+){
+
+  return String(
+    value ?? ""
+  )
+  .replace(
+    /[&<>"']/g,
+    character =>
+      ({
+
+        "&":
+          "&amp;",
+
+        "<":
+          "&lt;",
+
+        ">":
+          "&gt;",
+
+        '"':
+          "&quot;",
+
+        "'":
+          "&#39;"
+
+      }[character])
+  );
+
+}
+
+
+/* =====================================================
+   EXIBIR RESULTADO
+===================================================== */
+
+function renderResult(
+  data
+){
+
+  $("meta").innerHTML =
+    "";
+
+
+  const fields = [
+
+    [
+      "Solicitante",
+      data.solicitante
+    ],
+
+    [
+      "Contrato / Unidade",
+      data.contrato
+    ],
+
+    [
+      "Requisição",
+      data.requisicao
+    ]
+
+  ];
+
+
+  fields.forEach(
+    ([label,value]) => {
+
+      $("meta").insertAdjacentHTML(
+
+        "beforeend",
+
+        `
+        <div class="field">
+
+          <div class="label">
+            ${escapeHTML(label)}
+          </div>
+
+          <div class="value">
+            ${escapeHTML(
+              value ||
+              "Não identificado"
+            )}
+          </div>
+
+        </div>
+        `
+
+      );
+
+    }
+  );
+
+
+  $("tbody").innerHTML =
+    "";
+
+
+  data.itens.forEach(
+    item => {
+
+      $("tbody").insertAdjacentHTML(
+
+        "beforeend",
+
+        `
+        <tr>
+
+          <td>
+            ${escapeHTML(
+              item.codigo
+            )}
+          </td>
+
+          <td>
+            ${escapeHTML(
+              item.nome
+            )}
+          </td>
+
+          <td>
+            ${escapeHTML(
+              item.tamanho
+            )}
+          </td>
+
+          <td>
+            ${item.solicitado}
+          </td>
+
+          <td>
+            ${item.aprovado}
+          </td>
+
+          <td>
+            ${escapeHTML(
+              item.colaborador
+            )}
+          </td>
+
+        </tr>
+        `
+
+      );
+
+    }
+  );
+
+
+  $("info").textContent =
+
+    `${data.itens.length} item(ns) individual(is) encontrado(s). ` +
+
+    `A página de resumo não foi considerada.`;
+
+
+  resultBox.classList.remove(
+    "hidden"
+  );
+
+  actions.classList.remove(
+    "hidden"
+  );
+
+}
+
+
+/* =====================================================
+   COPIAR JSON
+===================================================== */
+
+$("copy").addEventListener(
+  "click",
+  async () => {
+
+    if(!finalData){
+
+      return;
+
+    }
+
+
+    await navigator.clipboard.writeText(
+
+      JSON.stringify(
+        finalData,
+        null,
+        2
+      )
+
+    );
+
+
+    status.textContent =
+      "JSON copiado.";
+
+  }
+);
+
+
+/* =====================================================
+   CSV
+===================================================== */
+
+$("csv").addEventListener(
+  "click",
+  () => {
+
+    if(!finalData){
+
+      return;
+
+    }
+
+
+    const columns = [
+
+      "codigo",
+      "nome",
+      "tamanho",
+      "solicitado",
+      "aprovado",
+      "colaborador"
+
+    ];
+
+
+    const escapeCSV =
+      value =>
+        `"${String(
+          value ?? ""
+        ).replace(
+          /"/g,
+          '""'
+        )}"`;
+
+
+    const rows = [
+
+      columns.join(";"),
+
+      ...finalData.itens.map(
+        item =>
+
+          columns
+            .map(
+              column =>
+                escapeCSV(
+                  item[column]
+                )
+            )
+            .join(";")
+      )
+
+    ];
+
+
+    const blob =
+      new Blob(
+        [
+          "\ufeff" +
+          rows.join("\n")
+        ],
+        {
+          type:
+            "text/csv;charset=utf-8"
+        }
+      );
+
+
+    const url =
+      URL.createObjectURL(
+        blob
+      );
+
+
+    const link =
+      document.createElement(
+        "a"
+      );
+
+
+    link.href =
+      url;
+
+
+    link.download =
+      (
+        finalData.requisicao ||
+        "requisicao"
+      )
+      +
+      ".csv";
+
+
+    link.click();
+
+
+    URL.revokeObjectURL(
+      url
+    );
+
+  }
+);
+
+
+/* =====================================================
+   MOSTRAR / ESCONDER OCR
+===================================================== */
+
+$("toggleRaw").addEventListener(
+  "click",
+  () => {
+
+    rawCard.classList.toggle(
+      "hidden"
+    );
+
+  }
+);
+
+</script>
+
+</body>
+</html>
