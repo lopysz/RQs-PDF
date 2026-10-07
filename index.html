@@ -1,0 +1,2712 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Leitor de Requisições WL</title>
+
+<style>
+*{
+    box-sizing:border-box;
+}
+
+body{
+    margin:0;
+    font-family:Arial,Helvetica,sans-serif;
+    background:#f4f7f5;
+    color:#202824;
+}
+
+header{
+    background:#198754;
+    color:white;
+    padding:18px 24px;
+}
+
+header h1{
+    margin:0 0 5px;
+    font-size:24px;
+}
+
+header p{
+    margin:0;
+    opacity:.9;
+}
+
+.container{
+    max-width:1400px;
+    margin:auto;
+    padding:20px;
+}
+
+.tabs{
+    display:flex;
+    gap:8px;
+    margin-bottom:18px;
+    flex-wrap:wrap;
+}
+
+.tab{
+    border:0;
+    background:#dfe8e3;
+    padding:12px 18px;
+    border-radius:8px;
+    cursor:pointer;
+    font-weight:bold;
+}
+
+.tab.active{
+    background:#198754;
+    color:white;
+}
+
+.panel{
+    display:none;
+}
+
+.panel.active{
+    display:block;
+}
+
+.card{
+    background:white;
+    border-radius:12px;
+    padding:20px;
+    margin-bottom:18px;
+    box-shadow:0 2px 8px rgba(0,0,0,.08);
+}
+
+.card h2{
+    margin-top:0;
+}
+
+input[type=file]{
+    width:100%;
+    padding:12px;
+    border:1px solid #ccd5d0;
+    border-radius:8px;
+    background:#fafafa;
+}
+
+button{
+    border:0;
+    border-radius:8px;
+    padding:10px 15px;
+    cursor:pointer;
+    font-weight:bold;
+}
+
+.btn-primary{
+    background:#198754;
+    color:white;
+}
+
+.btn-secondary{
+    background:#e9efeb;
+    color:#1f2923;
+}
+
+.btn-danger{
+    background:#dc3545;
+    color:white;
+}
+
+button:disabled{
+    opacity:.5;
+    cursor:not-allowed;
+}
+
+.status{
+    padding:12px;
+    background:#eef6f1;
+    border-radius:8px;
+    margin-top:12px;
+    white-space:pre-wrap;
+}
+
+.grid{
+    display:grid;
+    grid-template-columns:repeat(auto-fit,minmax(280px,1fr));
+    gap:15px;
+}
+
+.info{
+    background:#f7f9f8;
+    padding:12px;
+    border-radius:8px;
+}
+
+.info strong{
+    display:block;
+    font-size:12px;
+    color:#68736d;
+    margin-bottom:4px;
+}
+
+.table-wrap{
+    overflow:auto;
+    max-height:600px;
+    border:1px solid #ddd;
+    border-radius:8px;
+}
+
+table{
+    width:100%;
+    border-collapse:collapse;
+    background:white;
+}
+
+th,td{
+    padding:10px;
+    border-bottom:1px solid #e5e5e5;
+    text-align:left;
+    vertical-align:top;
+}
+
+th{
+    background:#eef4f0;
+    position:sticky;
+    top:0;
+    z-index:2;
+}
+
+.search{
+    width:100%;
+    padding:11px;
+    border:1px solid #ccd5d0;
+    border-radius:8px;
+    margin-bottom:12px;
+}
+
+.actions{
+    display:flex;
+    gap:8px;
+    flex-wrap:wrap;
+    margin-top:15px;
+}
+
+.badge{
+    display:inline-block;
+    padding:4px 8px;
+    border-radius:999px;
+    font-size:12px;
+    font-weight:bold;
+}
+
+.badge-ok{
+    background:#d1e7dd;
+    color:#0f5132;
+}
+
+.badge-warn{
+    background:#fff3cd;
+    color:#664d03;
+}
+
+.code{
+    font-family:monospace;
+    font-weight:bold;
+}
+
+pre{
+    background:#111;
+    color:#eee;
+    padding:15px;
+    border-radius:8px;
+    overflow:auto;
+    max-height:500px;
+    white-space:pre-wrap;
+}
+
+.progress{
+    width:100%;
+    height:10px;
+    background:#e4e9e6;
+    border-radius:20px;
+    overflow:hidden;
+    margin-top:10px;
+}
+
+.progress-bar{
+    height:100%;
+    width:0%;
+    background:#198754;
+    transition:width .2s;
+}
+
+.small{
+    font-size:13px;
+    color:#68736d;
+}
+
+.hidden{
+    display:none !important;
+}
+
+footer{
+    text-align:center;
+    padding:20px;
+    color:#68736d;
+    font-size:13px;
+}
+</style>
+</head>
+
+<body>
+
+<header>
+    <h1>📦 Leitor de Requisições WL</h1>
+    <p>Leitura da última página da RQ + consulta ao almoxarifado</p>
+</header>
+
+<div class="container">
+
+    <div class="tabs">
+        <button class="tab active" data-tab="rq">📄 Ler RQ</button>
+        <button class="tab" data-tab="stock">📦 Almoxarifado</button>
+        <button class="tab" data-tab="results">📋 Produtos encontrados</button>
+    </div>
+
+
+    <!-- ========================================================= -->
+    <!-- ABA RQ -->
+    <!-- ========================================================= -->
+
+    <section id="panel-rq" class="panel active">
+
+        <div class="card">
+
+            <h2>1. Carregar almoxarifado</h2>
+
+            <p>
+                Selecione uma planilha Excel
+                <strong>.xlsx</strong>,
+                ou um arquivo
+                <strong>.csv</strong>/<strong>.txt</strong>.
+            </p>
+
+            <input
+                id="stockFile"
+                type="file"
+                accept=".xlsx,.xls,.csv,.txt"
+            >
+
+            <div id="stockStatus" class="status">
+                Nenhuma base carregada.
+            </div>
+
+        </div>
+
+
+        <div class="card">
+
+            <h2>2. Carregar RQ</h2>
+
+            <p>
+                Selecione o PDF da requisição.
+                O programa irá analisar somente a
+                <strong>última página</strong>.
+            </p>
+
+            <input
+                id="pdfFile"
+                type="file"
+                accept=".pdf,application/pdf"
+            >
+
+            <div class="actions">
+
+                <button
+                    id="processBtn"
+                    class="btn-primary"
+                    disabled
+                >
+                    🔎 Ler última página
+                </button>
+
+                <button
+                    id="clearBtn"
+                    class="btn-secondary"
+                >
+                    Limpar
+                </button>
+
+            </div>
+
+            <div class="progress">
+                <div
+                    id="progressBar"
+                    class="progress-bar"
+                ></div>
+            </div>
+
+            <div
+                id="processStatus"
+                class="status"
+            >
+                Aguardando PDF.
+            </div>
+
+        </div>
+
+
+        <div
+            id="metadataCard"
+            class="card hidden"
+        >
+
+            <h2>Informações da RQ</h2>
+
+            <div class="grid">
+
+                <div class="info">
+                    <strong>RQ</strong>
+                    <span id="rqNumber">-</span>
+                </div>
+
+                <div class="info">
+                    <strong>Solicitante</strong>
+                    <span id="solicitante">-</span>
+                </div>
+
+                <div class="info">
+                    <strong>Contrato / Unidade</strong>
+                    <span id="contract">-</span>
+                </div>
+
+                <div class="info">
+                    <strong>Data</strong>
+                    <span id="rqDate">-</span>
+                </div>
+
+            </div>
+
+        </div>
+
+
+        <div
+            id="resultCard"
+            class="card hidden"
+        >
+
+            <h2>Produtos encontrados</h2>
+
+            <div id="resultSummary"></div>
+
+            <div class="actions">
+
+                <button
+                    id="copyJsonBtn"
+                    class="btn-secondary"
+                >
+                    📋 Copiar JSON
+                </button>
+
+                <button
+                    id="csvBtn"
+                    class="btn-secondary"
+                >
+                    📊 Exportar CSV
+                </button>
+
+                <button
+                    id="ocrBtn"
+                    class="btn-secondary"
+                >
+                    👁 Mostrar OCR
+                </button>
+
+            </div>
+
+            <div
+                id="resultsTable"
+                class="table-wrap"
+                style="margin-top:15px;"
+            ></div>
+
+            <div
+                id="ocrBox"
+                class="hidden"
+                style="margin-top:15px;"
+            >
+                <h3>OCR bruto</h3>
+                <pre id="ocrText"></pre>
+            </div>
+
+        </div>
+
+    </section>
+
+
+    <!-- ========================================================= -->
+    <!-- ABA ALMOXARIFADO -->
+    <!-- ========================================================= -->
+
+    <section
+        id="panel-stock"
+        class="panel"
+    >
+
+        <div class="card">
+
+            <h2>📦 Almoxarifado</h2>
+
+            <p>
+                Aqui ficam os produtos carregados da sua planilha.
+            </p>
+
+            <div class="grid">
+
+                <div class="info">
+                    <strong>Total de linhas</strong>
+                    <span id="stockCount">0</span>
+                </div>
+
+                <div class="info">
+                    <strong>Códigos válidos</strong>
+                    <span id="validCodeCount">0</span>
+                </div>
+
+                <div class="info">
+                    <strong>Formato carregado</strong>
+                    <span id="stockFormat">-</span>
+                </div>
+
+            </div>
+
+            <div style="margin-top:18px;">
+
+                <input
+                    id="stockSearch"
+                    class="search"
+                    placeholder="Pesquisar código ou produto..."
+                >
+
+            </div>
+
+            <div
+                id="stockTable"
+                class="table-wrap"
+            >
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Código</th>
+                            <th>Produto</th>
+                        </tr>
+                    </thead>
+
+                    <tbody>
+                        <tr>
+                            <td colspan="2">
+                                Nenhum produto carregado.
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+        </div>
+
+    </section>
+
+
+    <!-- ========================================================= -->
+    <!-- ABA RESULTADOS -->
+    <!-- ========================================================= -->
+
+    <section
+        id="panel-results"
+        class="panel"
+    >
+
+        <div class="card">
+
+            <h2>📋 Produtos encontrados nas RQs</h2>
+
+            <div
+                id="allResultsTable"
+                class="table-wrap"
+            >
+                <table>
+                    <thead>
+                        <tr>
+                            <th>RQ</th>
+                            <th>Código</th>
+                            <th>Produto</th>
+                            <th>Quantidade</th>
+                            <th>Colaborador</th>
+                        </tr>
+                    </thead>
+
+                    <tbody>
+                        <tr>
+                            <td colspan="5">
+                                Nenhuma RQ processada.
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+        </div>
+
+    </section>
+
+</div>
+
+
+<footer>
+    Leitor de Requisições WL — Versão 2.1
+</footer>
+
+
+<!-- ============================================================= -->
+<!-- PDF.JS -->
+<!-- ============================================================= -->
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.4.168/pdf.min.mjs"
+        type="module"></script>
+
+
+<!-- ============================================================= -->
+<!-- SHEETJS -->
+<!-- ============================================================= -->
+
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+
+
+<script type="module">
+
+/* ================================================================
+   PDF.JS
+================================================================ */
+
+const pdfjsLib =
+    await import(
+        "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.4.168/pdf.min.mjs"
+    );
+
+pdfjsLib.GlobalWorkerOptions.workerSrc =
+    "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.4.168/pdf.worker.min.mjs";
+
+
+/* ================================================================
+   TESSERACT
+================================================================ */
+
+const TesseractModule =
+    await import(
+        "https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.esm.min.js"
+    );
+
+const Tesseract =
+    TesseractModule.default ||
+    TesseractModule;
+
+const createWorker =
+    Tesseract.createWorker ||
+    TesseractModule.createWorker;
+
+
+/* ================================================================
+   VARIÁVEIS
+================================================================ */
+
+let products = new Map();
+
+let stockRows = [];
+
+let currentResults = [];
+
+let allResults = [];
+
+let currentOCR = "";
+
+let currentRQ = "";
+
+
+/* ================================================================
+   ELEMENTOS
+================================================================ */
+
+const stockFile =
+    document.getElementById("stockFile");
+
+const pdfFile =
+    document.getElementById("pdfFile");
+
+const processBtn =
+    document.getElementById("processBtn");
+
+const clearBtn =
+    document.getElementById("clearBtn");
+
+const stockStatus =
+    document.getElementById("stockStatus");
+
+const processStatus =
+    document.getElementById("processStatus");
+
+const progressBar =
+    document.getElementById("progressBar");
+
+
+/* ================================================================
+   ABAS
+================================================================ */
+
+document.querySelectorAll(".tab").forEach(tab => {
+
+    tab.addEventListener("click", () => {
+
+        document
+            .querySelectorAll(".tab")
+            .forEach(t => t.classList.remove("active"));
+
+        document
+            .querySelectorAll(".panel")
+            .forEach(p => p.classList.remove("active"));
+
+        tab.classList.add("active");
+
+        document
+            .getElementById(
+                "panel-" + tab.dataset.tab
+            )
+            .classList.add("active");
+
+    });
+
+});
+
+
+/* ================================================================
+   NORMALIZAR CÓDIGO
+================================================================ */
+
+function normalizeCode(value){
+
+    if(value === null || value === undefined){
+        return "";
+    }
+
+    let text =
+        String(value)
+            .trim();
+
+    if(!text){
+        return "";
+    }
+
+    /*
+      Não usamos Number().
+      Isso é importante porque:
+
+      00801856
+
+      não pode virar:
+
+      801856
+    */
+
+    text =
+        text.replace(/[^\d]/g,"");
+
+    return text;
+}
+
+
+/* ================================================================
+   VALIDAR CÓDIGO
+================================================================ */
+
+function looksLikeCode(code){
+
+    if(!code){
+        return false;
+    }
+
+    /*
+      O código real é validado principalmente
+      pela existência dele na base.
+
+      Aqui apenas eliminamos números obviamente
+      pequenos.
+    */
+
+    return /^\d{5,16}$/.test(code);
+}
+
+
+/* ================================================================
+   ADICIONAR PRODUTO
+================================================================ */
+
+function addProduct(code, description){
+
+    code =
+        normalizeCode(code);
+
+    description =
+        String(description || "")
+            .trim();
+
+    if(!code){
+        return;
+    }
+
+    if(!looksLikeCode(code)){
+        return;
+    }
+
+    /*
+      Se houver código repetido, guardamos
+      todas as descrições.
+    */
+
+    if(products.has(code)){
+
+        const old =
+            products.get(code);
+
+        if(
+            description &&
+            !old.includes(description)
+        ){
+            old.push(description);
+        }
+
+    }else{
+
+        products.set(
+            code,
+            description ? [description] : []
+        );
+
+    }
+
+}
+
+
+/* ================================================================
+   LER XLSX
+================================================================ */
+
+async function loadXLSX(file){
+
+    const buffer =
+        await file.arrayBuffer();
+
+    const workbook =
+        XLSX.read(
+            buffer,
+            {
+                type:"array",
+                cellText:true,
+                cellDates:false
+            }
+        );
+
+    if(!workbook.SheetNames.length){
+        throw new Error(
+            "A planilha não possui nenhuma aba."
+        );
+    }
+
+    /*
+      Usamos a primeira aba.
+    */
+
+    const sheet =
+        workbook.Sheets[
+            workbook.SheetNames[0]
+        ];
+
+    /*
+      header:1 mantém as células como matriz.
+    */
+
+    const rows =
+        XLSX.utils.sheet_to_json(
+            sheet,
+            {
+                header:1,
+                defval:"",
+                raw:false
+            }
+        );
+
+    if(!rows.length){
+        throw new Error(
+            "A planilha está vazia."
+        );
+    }
+
+    /*
+      Procuramos automaticamente as colunas.
+
+      Aceita:
+
+      Código
+      Codigo
+      Cód.
+      Cod
+      Produto
+      Descrição
+      Descricao
+      Item
+    */
+
+    const header =
+        rows[0]
+            .map(v =>
+                String(v)
+                    .trim()
+                    .toLowerCase()
+                    .normalize("NFD")
+                    .replace(/[\u0300-\u036f]/g,"")
+            );
+
+    let codeIndex = -1;
+    let productIndex = -1;
+
+    for(let i=0;i<header.length;i++){
+
+        const h = header[i];
+
+        if(
+            codeIndex === -1 &&
+            (
+                h === "codigo" ||
+                h === "cod" ||
+                h === "cod." ||
+                h.includes("codigo")
+            )
+        ){
+            codeIndex = i;
+        }
+
+        if(
+            productIndex === -1 &&
+            (
+                h === "produto" ||
+                h === "descricao" ||
+                h === "item" ||
+                h.includes("produto") ||
+                h.includes("descricao")
+            )
+        ){
+            productIndex = i;
+        }
+
+    }
+
+    /*
+      Caso a planilha não tenha cabeçalho,
+      assumimos:
+
+      coluna A = código
+      coluna B = produto
+    */
+
+    let start = 1;
+
+    if(codeIndex === -1){
+        codeIndex = 0;
+        start = 0;
+    }
+
+    if(productIndex === -1){
+        productIndex = 1;
+        start = Math.min(start,0);
+    }
+
+    products.clear();
+    stockRows = [];
+
+    for(
+        let i = start;
+        i < rows.length;
+        i++
+    ){
+
+        const row = rows[i];
+
+        const code =
+            normalizeCode(
+                row[codeIndex]
+            );
+
+        const description =
+            String(
+                row[productIndex] || ""
+            ).trim();
+
+        if(
+            !code &&
+            !description
+        ){
+            continue;
+        }
+
+        stockRows.push({
+            code,
+            description
+        });
+
+        if(code){
+            addProduct(
+                code,
+                description
+            );
+        }
+
+    }
+
+    return {
+        rows: stockRows.length,
+        codes: products.size
+    };
+
+}
+
+
+/* ================================================================
+   LER CSV/TXT
+================================================================ */
+
+async function loadTextFile(file){
+
+    const text =
+        await file.text();
+
+    const lines =
+        text
+            .split(/\r?\n/)
+            .map(x => x.trim())
+            .filter(Boolean);
+
+    products.clear();
+    stockRows = [];
+
+    for(const line of lines){
+
+        /*
+          Aceita:
+
+          código;produto
+          código,produto
+          código    produto
+        */
+
+        let parts;
+
+        if(line.includes(";")){
+            parts = line.split(";");
+        }
+        else if(line.includes(",")){
+            parts = line.split(",");
+        }
+        else if(/\s{2,}/.test(line)){
+            parts =
+                line.split(/\s{2,}/);
+        }
+        else{
+            continue;
+        }
+
+        const code =
+            normalizeCode(parts[0]);
+
+        const description =
+            parts
+                .slice(1)
+                .join(" ")
+                .trim();
+
+        if(
+            !code ||
+            code.toLowerCase() === "codigo"
+        ){
+            continue;
+        }
+
+        stockRows.push({
+            code,
+            description
+        });
+
+        addProduct(
+            code,
+            description
+        );
+
+    }
+
+    return {
+        rows:stockRows.length,
+        codes:products.size
+    };
+
+}
+
+
+/* ================================================================
+   CARREGAR ALMOXARIFADO
+================================================================ */
+
+stockFile.addEventListener(
+    "change",
+    async event => {
+
+        const file =
+            event.target.files[0];
+
+        if(!file){
+            return;
+        }
+
+        try{
+
+            stockStatus.textContent =
+                "Carregando almoxarifado...";
+
+            const name =
+                file.name.toLowerCase();
+
+            let result;
+
+            if(
+                name.endsWith(".xlsx") ||
+                name.endsWith(".xls")
+            ){
+
+                result =
+                    await loadXLSX(file);
+
+            }
+            else{
+
+                result =
+                    await loadTextFile(file);
+
+            }
+
+            document.getElementById(
+                "stockCount"
+            ).textContent =
+                result.rows;
+
+            document.getElementById(
+                "validCodeCount"
+            ).textContent =
+                result.codes;
+
+            document.getElementById(
+                "stockFormat"
+            ).textContent =
+                name.endsWith(".xlsx") ||
+                name.endsWith(".xls")
+                    ? "Excel"
+                    : "CSV/TXT";
+
+            stockStatus.innerHTML =
+                `✅ Almoxarifado carregado.<br>
+                 Linhas: <strong>${result.rows}</strong><br>
+                 Códigos válidos: <strong>${result.codes}</strong>`;
+
+            renderStock();
+
+            updateProcessButton();
+
+        }
+        catch(error){
+
+            console.error(error);
+
+            stockStatus.textContent =
+                "❌ Erro ao carregar a planilha: " +
+                error.message;
+
+            products.clear();
+            stockRows = [];
+
+            renderStock();
+
+            updateProcessButton();
+
+        }
+
+    }
+);
+
+
+/* ================================================================
+   PESQUISA ALMOXARIFADO
+================================================================ */
+
+document
+    .getElementById("stockSearch")
+    .addEventListener(
+        "input",
+        renderStock
+    );
+
+
+/* ================================================================
+   MOSTRAR ALMOXARIFADO
+================================================================ */
+
+function renderStock(){
+
+    const search =
+        document
+            .getElementById("stockSearch")
+            .value
+            .trim()
+            .toLowerCase();
+
+    const filtered =
+        stockRows.filter(row => {
+
+            return (
+                row.code
+                    .toLowerCase()
+                    .includes(search)
+                ||
+                row.description
+                    .toLowerCase()
+                    .includes(search)
+            );
+
+        });
+
+    const html =
+        filtered
+            .map(row => {
+
+                return `
+                    <tr>
+                        <td class="code">
+                            ${escapeHTML(row.code)}
+                        </td>
+
+                        <td>
+                            ${escapeHTML(row.description)}
+                        </td>
+                    </tr>
+                `;
+
+            })
+            .join("");
+
+    document.getElementById(
+        "stockTable"
+    ).innerHTML = `
+
+        <table>
+
+            <thead>
+
+                <tr>
+                    <th>Código</th>
+                    <th>Produto</th>
+                </tr>
+
+            </thead>
+
+            <tbody>
+
+                ${
+                    html ||
+                    `
+                    <tr>
+                        <td colspan="2">
+                            Nenhum produto encontrado.
+                        </td>
+                    </tr>
+                    `
+                }
+
+            </tbody>
+
+        </table>
+
+    `;
+
+}
+
+
+/* ================================================================
+   PDF SELECIONADO
+================================================================ */
+
+pdfFile.addEventListener(
+    "change",
+    updateProcessButton
+);
+
+
+/* ================================================================
+   HABILITAR BOTÃO
+================================================================ */
+
+function updateProcessButton(){
+
+    processBtn.disabled =
+        !pdfFile.files.length ||
+        !products.size;
+
+}
+
+
+/* ================================================================
+   RENDERIZAR ÚLTIMA PÁGINA
+================================================================ */
+
+async function renderLastPage(pdf){
+
+    const page =
+        await pdf.getPage(
+            pdf.numPages
+        );
+
+    /*
+      Escala alta para melhorar OCR.
+    */
+
+    const scale = 4;
+
+    const viewport =
+        page.getViewport({
+            scale
+        });
+
+    const canvas =
+        document.createElement(
+            "canvas"
+        );
+
+    const context =
+        canvas.getContext("2d");
+
+    canvas.width =
+        Math.ceil(viewport.width);
+
+    canvas.height =
+        Math.ceil(viewport.height);
+
+    await page.render({
+        canvasContext:context,
+        viewport
+    }).promise;
+
+    return canvas;
+
+}
+
+
+/* ================================================================
+   OCR
+================================================================ */
+
+async function runOCR(canvas){
+
+    if(
+        typeof createWorker !==
+        "function"
+    ){
+        throw new Error(
+            "Não foi possível carregar o Tesseract.js."
+        );
+    }
+
+    processStatus.textContent =
+        "Iniciando OCR...";
+
+    const worker =
+        await createWorker(
+            "por",
+            1,
+            {
+                logger: message => {
+
+                    if(
+                        message.status ===
+                        "recognizing text"
+                    ){
+
+                        const progress =
+                            Math.round(
+                                (
+                                    message.progress ||
+                                    0
+                                ) * 100
+                            );
+
+                        progressBar.style.width =
+                            progress + "%";
+
+                        processStatus.textContent =
+                            `OCR da última página: ${progress}%`;
+
+                    }
+
+                }
+            }
+        );
+
+    const result =
+        await worker.recognize(
+            canvas
+        );
+
+    await worker.terminate();
+
+    return result;
+
+}
+
+
+/* ================================================================
+   CORRIGIR ERROS OCR
+================================================================ */
+
+function repairOCRCode(value){
+
+    let code =
+        String(value || "");
+
+    /*
+      Correções comuns do OCR.
+
+      Só fazemos isso em candidatos numéricos.
+    */
+
+    code =
+        code
+            .replace(/[Oo]/g,"0")
+            .replace(/[Il|]/g,"1")
+            .replace(/[Ss]/g,"5")
+            .replace(/[Bb]/g,"8")
+            .replace(/[Gg]/g,"6");
+
+    return code;
+}
+
+
+/* ================================================================
+   DISTÂNCIA DE LEVENSHTEIN
+================================================================ */
+
+function levenshtein(a,b){
+
+    const matrix =
+        Array.from(
+            {
+                length:a.length + 1
+            },
+            () =>
+                Array(
+                    b.length + 1
+                ).fill(0)
+        );
+
+    for(let i=0;i<=a.length;i++){
+        matrix[i][0] = i;
+    }
+
+    for(let j=0;j<=b.length;j++){
+        matrix[0][j] = j;
+    }
+
+    for(let i=1;i<=a.length;i++){
+
+        for(let j=1;j<=b.length;j++){
+
+            const cost =
+                a[i-1] === b[j-1]
+                    ? 0
+                    : 1;
+
+            matrix[i][j] =
+                Math.min(
+                    matrix[i-1][j] + 1,
+                    matrix[i][j-1] + 1,
+                    matrix[i-1][j-1] + cost
+                );
+
+        }
+
+    }
+
+    return matrix[a.length][b.length];
+
+}
+
+
+/* ================================================================
+   PROCURAR CÓDIGO NA BASE
+================================================================ */
+
+function findProductCode(candidate){
+
+    candidate =
+        repairOCRCode(
+            candidate
+        );
+
+    candidate =
+        normalizeCode(
+            candidate
+        );
+
+    if(!candidate){
+        return null;
+    }
+
+    /*
+      PRIMEIRO:
+      correspondência exata.
+
+      Isso é o mais importante.
+    */
+
+    if(products.has(candidate)){
+        return candidate;
+    }
+
+    /*
+      Depois tentamos uma correção OCR
+      pequena.
+
+      Só aceitamos se houver
+      UMA única possibilidade próxima.
+    */
+
+    if(
+        candidate.length < 5 ||
+        candidate.length > 16
+    ){
+        return null;
+    }
+
+    const possible = [];
+
+    for(const code of products.keys()){
+
+        if(
+            Math.abs(
+                code.length -
+                candidate.length
+            ) > 1
+        ){
+            continue;
+        }
+
+        const distance =
+            levenshtein(
+                candidate,
+                code
+            );
+
+        /*
+          Máximo de um erro.
+
+          Isso evita que números aleatórios
+          sejam transformados em produtos.
+        */
+
+        if(distance <= 1){
+
+            possible.push(code);
+
+        }
+
+    }
+
+    if(possible.length === 1){
+        return possible[0];
+    }
+
+    return null;
+
+}
+
+
+/* ================================================================
+   ENCONTRAR CÓDIGOS NO OCR
+================================================================ */
+
+function findCodesFromOCR(text){
+
+    const found = [];
+
+    /*
+      Pegamos sequências de 5+ números.
+
+      Depois quem decide se é código é a
+      base do almoxarifado.
+    */
+
+    const matches =
+        text.match(
+            /\d{5,16}/g
+        ) || [];
+
+    for(const raw of matches){
+
+        const code =
+            findProductCode(raw);
+
+        if(
+            code &&
+            !found.includes(code)
+        ){
+
+            found.push(code);
+
+        }
+
+    }
+
+    return found;
+
+}
+
+
+/* ================================================================
+   DESCRIÇÃO
+================================================================ */
+
+function getProductDescription(code){
+
+    const descriptions =
+        products.get(code) || [];
+
+    return descriptions.join(
+        " / "
+    );
+
+}
+
+
+/* ================================================================
+   TAMANHO
+================================================================ */
+
+function extractSize(description){
+
+    const matches =
+        description.match(
+            /\(([^()]*)\)\s*$/
+        );
+
+    if(matches){
+        return matches[1];
+    }
+
+    return "";
+
+}
+
+
+/* ================================================================
+   EXTRAIR RQ
+================================================================ */
+
+function extractRQ(text){
+
+    const patterns = [
+
+        /RQ[-\s:]?(\d{3,6})/i,
+
+        /REQUISIÇÃO[\s\S]{0,50}?(\d{3,6})/i,
+
+        /REQUISICAO[\s\S]{0,50}?(\d{3,6})/i
+
+    ];
+
+    for(const pattern of patterns){
+
+        const match =
+            text.match(pattern);
+
+        if(match){
+            return match[1];
+        }
+
+    }
+
+    return "";
+
+}
+
+
+/* ================================================================
+   EXTRAIR DATA
+================================================================ */
+
+function extractDate(text){
+
+    const match =
+        text.match(
+            /\b\d{2}\/\d{2}\/\d{4}\b/
+        );
+
+    return match
+        ? match[0]
+        : "";
+
+}
+
+
+/* ================================================================
+   EXTRAIR SOLICITANTE
+================================================================ */
+
+function extractSolicitante(text){
+
+    const lines =
+        text
+            .split(/\r?\n/)
+            .map(x => x.trim())
+            .filter(Boolean);
+
+    for(let i=0;i<lines.length;i++){
+
+        const line =
+            lines[i];
+
+        if(
+            /solicitante/i.test(line)
+        ){
+
+            let value =
+                line
+                    .replace(
+                        /solicitante\s*:?\s*/i,
+                        ""
+                    )
+                    .trim();
+
+            if(value){
+                return value;
+            }
+
+            if(lines[i+1]){
+                return lines[i+1];
+            }
+
+        }
+
+    }
+
+    /*
+      Tentativa adicional:
+      nomes em letras maiúsculas próximos
+      do início do documento.
+    */
+
+    for(const line of lines.slice(0,30)){
+
+        if(
+            /^[A-ZÁÉÍÓÚÃÕÇÀÂÊÔÜ ]{8,}$/
+                .test(line)
+            &&
+            !/FORMULÁRIO|REQUISIÇÃO|REQUISICAO|COLABORADOR|PRODUTO|CÓDIGO|CODIGO/i.test(line)
+        ){
+            return line;
+        }
+
+    }
+
+    return "";
+
+}
+
+
+/* ================================================================
+   EXTRAIR CONTRATO
+================================================================ */
+
+function extractContract(text){
+
+    const lines =
+        text
+            .split(/\r?\n/)
+            .map(x => x.trim())
+            .filter(Boolean);
+
+    for(let i=0;i<lines.length;i++){
+
+        if(
+            /contrato|unidade/i.test(
+                lines[i]
+            )
+        ){
+
+            const clean =
+                lines[i]
+                    .replace(
+                        /contrato\s*\/?\s*unidade\s*:?\s*/i,
+                        ""
+                    )
+                    .replace(
+                        /contrato\s*:?\s*/i,
+                        ""
+                    )
+                    .replace(
+                        /unidade\s*:?\s*/i,
+                        ""
+                    )
+                    .trim();
+
+            if(clean){
+                return clean;
+            }
+
+            if(lines[i+1]){
+                return lines[i+1];
+            }
+
+        }
+
+    }
+
+    /*
+      Exemplo comum:
+      1383 - HORTOLANDIA
+    */
+
+    const match =
+        text.match(
+            /\b\d{3,5}\s*-\s*[A-ZÁÉÍÓÚÃÕÇ][A-ZÁÉÍÓÚÃÕÇ ]{3,}/
+        );
+
+    return match
+        ? match[0].trim()
+        : "";
+
+}
+
+
+/* ================================================================
+   COLABORADORES
+================================================================ */
+
+function extractCollaborators(text){
+
+    const lines =
+        text
+            .split(/\r?\n/)
+            .map(x => x.trim())
+            .filter(Boolean);
+
+    const names = [];
+
+    for(let i=0;i<lines.length;i++){
+
+        const line =
+            lines[i];
+
+        if(
+            /colaborador/i.test(line)
+        ){
+
+            let value =
+                line
+                    .replace(
+                        /colaborador\s*:?\s*/i,
+                        ""
+                    )
+                    .trim();
+
+            if(
+                value &&
+                value.length > 3
+            ){
+
+                names.push(value);
+
+            }
+            else{
+
+                /*
+                  Procura nas próximas linhas.
+                */
+
+                for(
+                    let j=i+1;
+                    j<Math.min(
+                        i+8,
+                        lines.length
+                    );
+                    j++
+                ){
+
+                    const candidate =
+                        lines[j].trim();
+
+                    if(
+                        /^[A-ZÁÉÍÓÚÃÕÇÀÂÊÔÜ][A-ZÁÉÍÓÚÃÕÇÀÂÊÔÜ ]{5,}$/
+                            .test(candidate)
+                        &&
+                        !/\d/.test(candidate)
+                    ){
+
+                        names.push(
+                            candidate
+                        );
+
+                        break;
+
+                    }
+
+                }
+
+            }
+
+        }
+
+    }
+
+    return names;
+
+}
+
+
+/* ================================================================
+   QUANTIDADES
+================================================================ */
+
+function extractQuantities(text, codes){
+
+    const lines =
+        text
+            .split(/\r?\n/)
+            .map(x => x.trim())
+            .filter(Boolean);
+
+    const result = {};
+
+    for(const code of codes){
+
+        result[code] = 1;
+
+        const index =
+            lines.findIndex(
+                line =>
+                    line.includes(code)
+            );
+
+        if(index === -1){
+            continue;
+        }
+
+        const nearby =
+            lines
+                .slice(
+                    index,
+                    index + 4
+                )
+                .join(" ");
+
+        /*
+          Procura números pequenos.
+
+          Evitamos considerar o próprio código.
+        */
+
+        const nums =
+            nearby.match(
+                /\b\d{1,2}\b/g
+            ) || [];
+
+        const valid =
+            nums
+                .map(Number)
+                .filter(
+                    n =>
+                        n >= 1 &&
+                        n <= 99
+                );
+
+        if(valid.length){
+            result[code] =
+                valid[valid.length - 1];
+        }
+
+    }
+
+    return result;
+
+}
+
+
+/* ================================================================
+   ASSOCIAR COLABORADORES
+================================================================ */
+
+function associateCollaborators(
+    text,
+    codes
+){
+
+    const lines =
+        text
+            .split(/\r?\n/)
+            .map(x => x.trim())
+            .filter(Boolean);
+
+    const collaborators =
+        extractCollaborators(text);
+
+    const result = {};
+
+    codes.forEach(
+        (code,index) => {
+
+            /*
+              Tentativa baseada na ordem.
+            */
+
+            if(collaborators[index]){
+                result[code] =
+                    collaborators[index];
+            }
+            else{
+                result[code] = "";
+            }
+
+            /*
+              Se houver COLABORADOR próximo ao código,
+              damos preferência a ele.
+            */
+
+            const codeIndex =
+                lines.findIndex(
+                    line =>
+                        line.includes(code)
+                );
+
+            if(codeIndex >= 0){
+
+                for(
+                    let i=codeIndex;
+                    i<Math.min(
+                        codeIndex+8,
+                        lines.length
+                    );
+                    i++
+                ){
+
+                    const line =
+                        lines[i];
+
+                    if(
+                        /colaborador/i.test(line)
+                    ){
+
+                        const clean =
+                            line
+                                .replace(
+                                    /colaborador\s*:?\s*/i,
+                                    ""
+                                )
+                                .trim();
+
+                        if(
+                            clean &&
+                            clean.length > 3
+                        ){
+
+                            result[code] =
+                                clean;
+
+                        }
+
+                        break;
+
+                    }
+
+                }
+
+            }
+
+        }
+    );
+
+    return result;
+
+}
+
+
+/* ================================================================
+   PROCESSAR PDF
+================================================================ */
+
+processBtn.addEventListener(
+    "click",
+    processPDF
+);
+
+
+async function processPDF(){
+
+    const file =
+        pdfFile.files[0];
+
+    if(!file){
+        return;
+    }
+
+    if(!products.size){
+
+        alert(
+            "Carregue primeiro o almoxarifado."
+        );
+
+        return;
+
+    }
+
+    try{
+
+        processBtn.disabled = true;
+
+        progressBar.style.width =
+            "5%";
+
+        processStatus.textContent =
+            "Abrindo PDF...";
+
+        const buffer =
+            await file.arrayBuffer();
+
+        const pdf =
+            await pdfjsLib.getDocument({
+                data:buffer
+            }).promise;
+
+        processStatus.textContent =
+            `PDF carregado. ${pdf.numPages} página(s). Analisando somente a última...`;
+
+        progressBar.style.width =
+            "15%";
+
+        const canvas =
+            await renderLastPage(
+                pdf
+            );
+
+        progressBar.style.width =
+            "25%";
+
+        const ocrResult =
+            await runOCR(
+                canvas
+            );
+
+        currentOCR =
+            ocrResult.data.text || "";
+
+        progressBar.style.width =
+            "85%";
+
+        processStatus.textContent =
+            "Identificando códigos no almoxarifado...";
+
+        const codes =
+            findCodesFromOCR(
+                currentOCR
+            );
+
+        const rq =
+            extractRQ(
+                currentOCR
+            );
+
+        const solicitante =
+            extractSolicitante(
+                currentOCR
+            );
+
+        const contract =
+            extractContract(
+                currentOCR
+            );
+
+        const date =
+            extractDate(
+                currentOCR
+            );
+
+        const quantities =
+            extractQuantities(
+                currentOCR,
+                codes
+            );
+
+        const collaborators =
+            associateCollaborators(
+                currentOCR,
+                codes
+            );
+
+        currentRQ =
+            rq;
+
+        currentResults =
+            codes.map(
+                code => {
+
+                    const description =
+                        getProductDescription(
+                            code
+                        );
+
+                    return {
+
+                        rq,
+
+                        code,
+
+                        product:
+                            description,
+
+                        size:
+                            extractSize(
+                                description
+                            ),
+
+                        quantity:
+                            quantities[code] || 1,
+
+                        collaborator:
+                            collaborators[code] || "",
+
+                    };
+
+                }
+            );
+
+
+        /*
+          Guardar histórico
+        */
+
+        for(
+            const item of currentResults
+        ){
+
+            allResults.push(item);
+
+        }
+
+        renderMetadata({
+            rq,
+            solicitante,
+            contract,
+            date
+        });
+
+        renderResults();
+
+        renderAllResults();
+
+        document
+            .getElementById(
+                "ocrText"
+            )
+            .textContent =
+                currentOCR;
+
+        progressBar.style.width =
+            "100%";
+
+        processStatus.textContent =
+            `✅ Concluído. ${codes.length} produto(s) encontrado(s) na base do almoxarifado.`;
+
+    }
+    catch(error){
+
+        console.error(error);
+
+        processStatus.textContent =
+            "❌ Erro: " +
+            error.message;
+
+        progressBar.style.width =
+            "0%";
+
+    }
+    finally{
+
+        updateProcessButton();
+
+    }
+
+}
+
+
+/* ================================================================
+   METADADOS
+================================================================ */
+
+function renderMetadata(data){
+
+    document.getElementById(
+        "metadataCard"
+    ).classList.remove("hidden");
+
+    document.getElementById(
+        "rqNumber"
+    ).textContent =
+        data.rq || "-";
+
+    document.getElementById(
+        "solicitante"
+    ).textContent =
+        data.solicitante || "-";
+
+    document.getElementById(
+        "contract"
+    ).textContent =
+        data.contract || "-";
+
+    document.getElementById(
+        "rqDate"
+    ).textContent =
+        data.date || "-";
+
+}
+
+
+/* ================================================================
+   RESULTADOS
+================================================================ */
+
+function renderResults(){
+
+    document
+        .getElementById(
+            "resultCard"
+        )
+        .classList.remove(
+            "hidden"
+        );
+
+    document.getElementById(
+        "resultSummary"
+    ).innerHTML = `
+
+        <p>
+
+            <span class="badge badge-ok">
+
+                ${
+                    currentResults.length
+                }
+                produto(s) encontrado(s)
+
+            </span>
+
+        </p>
+
+    `;
+
+    const html =
+        currentResults.map(
+            item => {
+
+                return `
+
+                    <tr>
+
+                        <td class="code">
+                            ${escapeHTML(item.code)}
+                        </td>
+
+                        <td>
+                            ${escapeHTML(item.product)}
+                        </td>
+
+                        <td>
+                            ${escapeHTML(item.size || "-")}
+                        </td>
+
+                        <td>
+                            ${escapeHTML(
+                                String(
+                                    item.quantity
+                                )
+                            )}
+                        </td>
+
+                        <td>
+                            ${escapeHTML(
+                                item.collaborator ||
+                                "-"
+                            )}
+                        </td>
+
+                    </tr>
+
+                `;
+
+            }
+        ).join("");
+
+    document.getElementById(
+        "resultsTable"
+    ).innerHTML = `
+
+        <table>
+
+            <thead>
+
+                <tr>
+                    <th>Código</th>
+                    <th>Produto</th>
+                    <th>Tamanho</th>
+                    <th>Quantidade</th>
+                    <th>Colaborador</th>
+                </tr>
+
+            </thead>
+
+            <tbody>
+
+                ${
+                    html ||
+                    `
+                    <tr>
+                        <td colspan="5">
+                            Nenhum código da RQ foi encontrado na base do almoxarifado.
+                        </td>
+                    </tr>
+                    `
+                }
+
+            </tbody>
+
+        </table>
+
+    `;
+
+}
+
+
+/* ================================================================
+   TODOS OS RESULTADOS
+================================================================ */
+
+function renderAllResults(){
+
+    const html =
+        allResults.map(
+            item => {
+
+                return `
+
+                    <tr>
+
+                        <td>
+                            ${escapeHTML(
+                                item.rq || "-"
+                            )}
+                        </td>
+
+                        <td class="code">
+                            ${escapeHTML(
+                                item.code
+                            )}
+                        </td>
+
+                        <td>
+                            ${escapeHTML(
+                                item.product
+                            )}
+                        </td>
+
+                        <td>
+                            ${escapeHTML(
+                                String(
+                                    item.quantity
+                                )
+                            )}
+                        </td>
+
+                        <td>
+                            ${escapeHTML(
+                                item.collaborator ||
+                                "-"
+                            )}
+                        </td>
+
+                    </tr>
+
+                `;
+
+            }
+        ).join("");
+
+    document.getElementById(
+        "allResultsTable"
+    ).innerHTML = `
+
+        <table>
+
+            <thead>
+
+                <tr>
+                    <th>RQ</th>
+                    <th>Código</th>
+                    <th>Produto</th>
+                    <th>Quantidade</th>
+                    <th>Colaborador</th>
+                </tr>
+
+            </thead>
+
+            <tbody>
+
+                ${
+                    html ||
+                    `
+                    <tr>
+                        <td colspan="5">
+                            Nenhuma RQ processada.
+                        </td>
+                    </tr>
+                    `
+                }
+
+            </tbody>
+
+        </table>
+
+    `;
+
+}
+
+
+/* ================================================================
+   COPIAR JSON
+================================================================ */
+
+document
+    .getElementById("copyJsonBtn")
+    .addEventListener(
+        "click",
+        async () => {
+
+            const data =
+                JSON.stringify(
+                    currentResults,
+                    null,
+                    2
+                );
+
+            await navigator.clipboard.writeText(
+                data
+            );
+
+            alert(
+                "JSON copiado."
+            );
+
+        }
+    );
+
+
+/* ================================================================
+   EXPORTAR CSV
+================================================================ */
+
+document
+    .getElementById("csvBtn")
+    .addEventListener(
+        "click",
+        () => {
+
+            const header =
+                [
+                    "RQ",
+                    "Código",
+                    "Produto",
+                    "Tamanho",
+                    "Quantidade",
+                    "Colaborador"
+                ];
+
+            const rows =
+                currentResults.map(
+                    item => [
+
+                        item.rq,
+
+                        item.code,
+
+                        item.product,
+
+                        item.size,
+
+                        item.quantity,
+
+                        item.collaborator
+
+                    ]
+                );
+
+            const csv =
+                [
+                    header,
+                    ...rows
+                ]
+                .map(
+                    row =>
+                        row
+                            .map(
+                                value =>
+                                    `"${String(value ?? "")
+                                        .replace(/"/g,'""')}"`
+                            )
+                            .join(";")
+                )
+                .join("\n");
+
+            const blob =
+                new Blob(
+                    [
+                        "\uFEFF" +
+                        csv
+                    ],
+                    {
+                        type:
+                            "text/csv;charset=utf-8"
+                    }
+                );
+
+            const url =
+                URL.createObjectURL(
+                    blob
+                );
+
+            const a =
+                document.createElement(
+                    "a"
+                );
+
+            a.href = url;
+
+            a.download =
+                `RQ_${currentRQ || "resultado"}.csv`;
+
+            a.click();
+
+            URL.revokeObjectURL(
+                url
+            );
+
+        }
+    );
+
+
+/* ================================================================
+   MOSTRAR / ESCONDER OCR
+================================================================ */
+
+document
+    .getElementById("ocrBtn")
+    .addEventListener(
+        "click",
+        () => {
+
+            const box =
+                document.getElementById(
+                    "ocrBox"
+                );
+
+            box.classList.toggle(
+                "hidden"
+            );
+
+        }
+    );
+
+
+/* ================================================================
+   LIMPAR
+================================================================ */
+
+clearBtn.addEventListener(
+    "click",
+    () => {
+
+        pdfFile.value = "";
+
+        currentResults = [];
+
+        currentOCR = "";
+
+        currentRQ = "";
+
+        document
+            .getElementById(
+                "metadataCard"
+            )
+            .classList.add(
+                "hidden"
+            );
+
+        document
+            .getElementById(
+                "resultCard"
+            )
+            .classList.add(
+                "hidden"
+            );
+
+        progressBar.style.width =
+            "0%";
+
+        processStatus.textContent =
+            "Aguardando PDF.";
+
+        updateProcessButton();
+
+    }
+);
+
+
+/* ================================================================
+   ESCAPE HTML
+================================================================ */
+
+function escapeHTML(value){
+
+    return String(value ?? "")
+        .replace(/&/g,"&amp;")
+        .replace(/</g,"&lt;")
+        .replace(/>/g,"&gt;")
+        .replace(/"/g,"&quot;")
+        .replace(/'/g,"&#039;");
+
+}
+
+
+/* ================================================================
+   INICIALIZAÇÃO
+================================================================ */
+
+renderStock();
+renderAllResults();
+updateProcessButton();
+
+</script>
+
+</body>
+</html>
