@@ -1,0 +1,2089 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<title>Leitor de Requisições - v1.3</title>
+
+<style>
+*{
+  box-sizing:border-box;
+}
+
+body{
+  margin:0;
+  font-family:Arial,sans-serif;
+  background:#f4f7f5;
+  color:#18221d;
+}
+
+.wrap{
+  max-width:1150px;
+  margin:auto;
+  padding:25px;
+}
+
+h1{
+  margin:0 0 5px;
+}
+
+.subtitle{
+  color:#66736c;
+  margin-bottom:20px;
+}
+
+.card{
+  background:white;
+  border:1px solid #dfe6e2;
+  border-radius:14px;
+  padding:18px;
+  margin-bottom:16px;
+  box-shadow:0 2px 8px #00000008;
+}
+
+.drop{
+  display:block;
+  border:2px dashed #aebbb3;
+  border-radius:12px;
+  padding:35px 20px;
+  text-align:center;
+  cursor:pointer;
+  background:#fbfdfb;
+}
+
+.drop:hover{
+  border-color:#27864d;
+}
+
+.drop strong{
+  display:block;
+  font-size:18px;
+  margin-bottom:7px;
+}
+
+.drop span{
+  color:#66736c;
+}
+
+input{
+  display:none;
+}
+
+.progress{
+  height:10px;
+  margin-top:15px;
+  background:#e7ece9;
+  border-radius:20px;
+  overflow:hidden;
+}
+
+.bar{
+  width:0%;
+  height:100%;
+  background:#27864d;
+  transition:.2s;
+}
+
+.status{
+  margin-top:9px;
+  color:#66736c;
+  min-height:20px;
+}
+
+.grid{
+  display:grid;
+  grid-template-columns:repeat(3,1fr);
+  gap:10px;
+}
+
+.field{
+  background:#f7f9f7;
+  border:1px solid #dfe6e2;
+  border-radius:9px;
+  padding:10px;
+}
+
+.label{
+  font-size:11px;
+  color:#66736c;
+  text-transform:uppercase;
+}
+
+.value{
+  margin-top:5px;
+  font-weight:bold;
+  word-break:break-word;
+}
+
+.table-wrap{
+  overflow:auto;
+  border:1px solid #dfe6e2;
+  border-radius:10px;
+}
+
+table{
+  width:100%;
+  min-width:950px;
+  border-collapse:collapse;
+}
+
+th,
+td{
+  padding:9px 10px;
+  border-bottom:1px solid #dfe6e2;
+  text-align:left;
+}
+
+th{
+  background:#eef4ef;
+  font-size:12px;
+}
+
+pre{
+  background:#101512;
+  color:#d8e8dd;
+  padding:15px;
+  border-radius:10px;
+  max-height:500px;
+  overflow:auto;
+  white-space:pre-wrap;
+  word-break:break-word;
+  font-size:12px;
+}
+
+button{
+  border:0;
+  border-radius:8px;
+  padding:10px 15px;
+  background:#27864d;
+  color:white;
+  font-weight:bold;
+  cursor:pointer;
+  margin-right:8px;
+}
+
+button.secondary{
+  background:#e8eee9;
+  color:#24332a;
+}
+
+.hidden{
+  display:none;
+}
+
+.error{
+  color:#b42318;
+  font-weight:bold;
+}
+
+.version{
+  position:fixed;
+  left:10px;
+  bottom:10px;
+  z-index:9999;
+  padding:4px 8px;
+  font-size:12px;
+  color:#66736c;
+  background:#ffffffee;
+  border:1px solid #dfe6e2;
+  border-radius:6px;
+  box-shadow:0 2px 5px #00000012;
+}
+
+@media(max-width:700px){
+  .wrap{
+    padding:12px;
+  }
+
+  .grid{
+    grid-template-columns:1fr;
+  }
+}
+</style>
+</head>
+
+<body>
+
+<div class="version">
+  Versão 1.3
+</div>
+
+<div class="wrap">
+
+<h1>Leitor de Requisições</h1>
+
+<div class="subtitle">
+  Processa somente a última folha da requisição.
+</div>
+
+
+<!-- UPLOAD -->
+
+<div class="card">
+
+<label class="drop" id="drop">
+
+<strong>
+Selecione ou arraste uma requisição PDF
+</strong>
+
+<span>
+Somente a última página será analisada.
+</span>
+
+<input
+  id="file"
+  type="file"
+  accept=".pdf,application/pdf"
+>
+
+</label>
+
+
+<div class="progress">
+
+<div
+  class="bar"
+  id="bar">
+</div>
+
+</div>
+
+
+<div
+  class="status"
+  id="status">
+
+Aguardando PDF.
+
+</div>
+
+</div>
+
+
+<!-- RESULTADO -->
+
+<div
+  class="card hidden"
+  id="result">
+
+<h2>Resultado</h2>
+
+
+<div
+  class="grid"
+  id="meta">
+</div>
+
+
+<h3>Itens</h3>
+
+
+<div class="table-wrap">
+
+<table>
+
+<thead>
+
+<tr>
+
+<th>Código</th>
+
+<th>Produto</th>
+
+<th>Tamanho</th>
+
+<th>Solicitado</th>
+
+<th>Aprovado</th>
+
+<th>Colaborador</th>
+
+</tr>
+
+</thead>
+
+<tbody id="tbody"></tbody>
+
+</table>
+
+</div>
+
+</div>
+
+
+<!-- AÇÕES -->
+
+<div
+  class="card hidden"
+  id="actions">
+
+<button id="copy">
+Copiar JSON
+</button>
+
+<button
+  id="csv"
+  class="secondary">
+
+Exportar CSV
+
+</button>
+
+<button
+  id="toggleRaw"
+  class="secondary">
+
+Mostrar OCR
+
+</button>
+
+</div>
+
+
+<!-- OCR -->
+
+<div
+  class="card hidden"
+  id="rawCard">
+
+<h3>OCR da última página</h3>
+
+<pre id="raw"></pre>
+
+</div>
+
+</div>
+
+
+<script type="module">
+
+
+/* =====================================================
+   PDF.JS
+===================================================== */
+
+import * as pdfjsLib from
+"https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.10.38/pdf.min.mjs";
+
+
+pdfjsLib.GlobalWorkerOptions.workerSrc =
+"https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.10.38/pdf.worker.min.mjs";
+
+
+/* =====================================================
+   TESSERACT
+===================================================== */
+
+const TesseractModule =
+await import(
+"https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.esm.min.js"
+);
+
+
+const Tesseract =
+TesseractModule.default ||
+TesseractModule;
+
+
+/* =====================================================
+   ELEMENTOS
+===================================================== */
+
+const fileInput =
+document.getElementById("file");
+
+const drop =
+document.getElementById("drop");
+
+const bar =
+document.getElementById("bar");
+
+const status =
+document.getElementById("status");
+
+const result =
+document.getElementById("result");
+
+const actions =
+document.getElementById("actions");
+
+const rawCard =
+document.getElementById("rawCard");
+
+const raw =
+document.getElementById("raw");
+
+const tbody =
+document.getElementById("tbody");
+
+const meta =
+document.getElementById("meta");
+
+
+let finalData = null;
+
+
+/* =====================================================
+   UPLOAD
+===================================================== */
+
+drop.addEventListener(
+"click",
+e => {
+
+if(e.target !== fileInput){
+
+fileInput.click();
+
+}
+
+});
+
+
+fileInput.addEventListener(
+"change",
+e => {
+
+const file =
+e.target.files[0];
+
+if(file){
+
+processPDF(file);
+
+}
+
+});
+
+
+drop.addEventListener(
+"dragover",
+e => {
+
+e.preventDefault();
+
+drop.style.borderColor =
+"#27864d";
+
+});
+
+
+drop.addEventListener(
+"dragleave",
+() => {
+
+drop.style.borderColor =
+"#aebbb3";
+
+});
+
+
+drop.addEventListener(
+"drop",
+e => {
+
+e.preventDefault();
+
+drop.style.borderColor =
+"#aebbb3";
+
+const file =
+e.dataTransfer.files[0];
+
+if(file){
+
+processPDF(file);
+
+}
+
+});
+
+
+/* =====================================================
+   PROGRESSO
+===================================================== */
+
+function progress(
+value,
+message
+){
+
+bar.style.width =
+Math.max(
+0,
+Math.min(
+100,
+value
+)
+) + "%";
+
+status.textContent =
+message;
+
+}
+
+
+/* =====================================================
+   NORMALIZAÇÃO
+===================================================== */
+
+function normalize(
+text
+){
+
+return String(
+text || ""
+)
+.normalize("NFD")
+.replace(
+/[\u0300-\u036f]/g,
+""
+)
+.toUpperCase()
+.trim();
+
+}
+
+
+function clean(
+text
+){
+
+return String(
+text || ""
+)
+.replace(
+/\s+/g,
+" "
+)
+.trim();
+
+}
+
+
+/* =====================================================
+   CÓDIGO DO PRODUTO
+===================================================== */
+
+function isProductCode(
+text
+){
+
+return /^\d{6,12}$/.test(
+String(text || "")
+.replace(/\s/g,"")
+);
+
+}
+
+
+/* =====================================================
+   TAMANHO
+===================================================== */
+
+function getSize(
+text
+){
+
+const match =
+String(text || "")
+.match(
+/\(\s*(\d{1,3})\s*\)/
+);
+
+return match
+? match[1]
+: "";
+
+}
+
+
+/* =====================================================
+   RENDERIZAR PDF
+===================================================== */
+
+async function renderLastPage(
+pdf
+){
+
+const pageNumber =
+pdf.numPages;
+
+progress(
+10,
+`Abrindo última página (${pageNumber})...`
+);
+
+
+const page =
+await pdf.getPage(
+pageNumber
+);
+
+
+/*
+  Escala alta porque a tabela
+  da última folha possui
+  informações pequenas.
+*/
+
+const viewport =
+page.getViewport({
+scale:3.5
+});
+
+
+const canvas =
+document.createElement(
+"canvas"
+);
+
+
+canvas.width =
+Math.ceil(
+viewport.width
+);
+
+canvas.height =
+Math.ceil(
+viewport.height
+);
+
+
+const context =
+canvas.getContext(
+"2d",
+{
+willReadFrequently:true
+}
+);
+
+
+await page.render({
+
+canvasContext:
+context,
+
+viewport:
+viewport
+
+}).promise;
+
+
+return canvas;
+
+}
+
+
+/* =====================================================
+   OCR
+===================================================== */
+
+async function runOCR(
+canvas
+){
+
+const createWorker =
+Tesseract.createWorker ||
+TesseractModule.createWorker;
+
+
+if(
+typeof createWorker !==
+"function"
+){
+
+throw new Error(
+"Tesseract.js não carregou o createWorker."
+);
+
+}
+
+
+progress(
+20,
+"Inicializando OCR..."
+);
+
+
+const worker =
+await createWorker(
+"por",
+1,
+{
+
+logger:
+message => {
+
+if(
+message.status ===
+"recognizing text"
+){
+
+const p =
+message.progress || 0;
+
+
+progress(
+20 + p*70,
+`Lendo última página: ${(p*100).toFixed(0)}%`
+);
+
+}
+
+}
+
+}
+);
+
+
+await worker.setParameters({
+
+tessedit_pageseg_mode:
+"6",
+
+preserve_interword_spaces:
+"1"
+
+});
+
+
+const resultOCR =
+await worker.recognize(
+canvas
+);
+
+
+await worker.terminate();
+
+
+return resultOCR.data;
+
+}
+
+
+/* =====================================================
+   LINHAS
+===================================================== */
+
+function makeLines(
+words
+){
+
+const lines = [];
+
+
+const sorted =
+[...words].sort(
+(a,b) =>
+a.bbox.y0 -
+b.bbox.y0
+);
+
+
+for(
+const word of sorted
+){
+
+const cy =
+(
+word.bbox.y0 +
+word.bbox.y1
+) / 2;
+
+
+let line =
+lines.find(
+item =>
+Math.abs(
+item.cy-cy
+) < 15
+);
+
+
+if(!line){
+
+line = {
+
+cy:cy,
+
+words:[]
+
+};
+
+lines.push(
+line
+);
+
+}
+
+
+line.words.push(
+word
+);
+
+}
+
+
+for(
+const line of lines
+){
+
+line.words.sort(
+(a,b) =>
+a.bbox.x0 -
+b.bbox.x0
+);
+
+}
+
+
+return lines.sort(
+(a,b) =>
+a.cy-b.cy
+);
+
+}
+
+
+function getLineText(
+line
+){
+
+return clean(
+line.words
+.map(
+word =>
+word.text
+)
+.join(" ")
+);
+
+}
+
+
+/* =====================================================
+   ENCONTRAR CÓDIGOS
+===================================================== */
+
+function findCodes(
+words
+){
+
+return words
+.filter(
+word =>
+isProductCode(
+word.text
+)
+)
+.map(
+word => ({
+
+code:
+word.text
+.replace(
+(/\s/g),
+""),
+
+x:
+word.bbox.x0,
+
+y:
+(
+word.bbox.y0+
+word.bbox.y1
+)/2,
+
+word:word
+
+})
+);
+
+}
+
+
+/* =====================================================
+   ENCONTRAR COLABORADORES
+===================================================== */
+
+function findCollaborators(
+lines
+){
+
+const result = [];
+
+
+for(
+let i=0;
+i<lines.length;
+i++
+){
+
+const text =
+getLineText(
+lines[i]
+);
+
+
+const normalized =
+normalize(text);
+
+
+if(
+normalized.includes(
+"COLABORADOR"
+)
+){
+
+let name =
+text.replace(
+/.*COLABORADOR\s*:?\s*/i,
+""
+);
+
+
+name =
+clean(name);
+
+
+if(name){
+
+result.push({
+
+name:name,
+
+y:lines[i].cy
+
+});
+
+}
+
+}
+
+}
+
+
+return result;
+
+}
+
+
+/* =====================================================
+   DESCRIÇÃO
+===================================================== */
+
+function extractDescription(
+lines,
+code,
+nextCollaboratorY
+){
+
+/*
+  Procura linhas próximas
+  do código.
+
+  O objetivo é encontrar:
+
+  BOTINA DE COURO (43)
+
+  ou
+
+  SAPATO E.V.A. (34)
+*/
+
+const candidates =
+lines
+.filter(
+line =>
+
+Math.abs(
+line.cy-code.y
+) < 70
+
+&&
+
+line.cy <=
+nextCollaboratorY + 5
+);
+
+
+let best = "";
+
+
+for(
+const line of candidates
+){
+
+const text =
+getLineText(
+line
+);
+
+
+if(!text){
+
+continue;
+
+}
+
+
+if(
+text.includes(
+code.code
+)
+){
+
+continue;
+
+}
+
+
+if(
+normalize(text)
+.includes(
+"COLABORADOR"
+)
+){
+
+continue;
+
+}
+
+
+if(
+isProductCode(
+text
+.replace(
+/[^\d]/g,
+""
+)
+)
+){
+
+continue;
+
+}
+
+
+/*
+  Procuramos especialmente
+  uma descrição que contenha
+  o tamanho entre parênteses.
+*/
+
+if(
+/\(\s*\d{1,3}\s*\)/
+.test(text)
+){
+
+best =
+text;
+
+break;
+
+}
+
+
+if(
+text.length >
+best.length
+){
+
+best =
+text;
+
+}
+
+}
+
+
+best =
+best.replace(
+/\d{1,2}\s*$/,
+""
+);
+
+
+return clean(best);
+
+}
+
+
+/* =====================================================
+   ENCONTRAR QUANTIDADES
+===================================================== */
+
+function findQuantities(
+code,
+words
+){
+
+/*
+  A tabela possui colunas.
+
+  Nesta primeira versão:
+  procuramos números pequenos
+  próximos horizontalmente
+  ao código.
+
+  Não consideramos o próprio
+  código como quantidade.
+*/
+
+const candidates =
+words
+.filter(
+word => {
+
+if(
+isProductCode(
+word.text
+)
+){
+
+return false;
+
+}
+
+
+if(
+!/^\d{1,3}$/.test(
+word.text.trim()
+)
+){
+
+return false;
+
+}
+
+
+const y =
+(
+word.bbox.y0+
+word.bbox.y1
+)/2;
+
+
+return Math.abs(
+y-code.y
+) < 35;
+
+}
+)
+.sort(
+(a,b) =>
+a.bbox.x0-b.bbox.x0
+);
+
+
+const numbers =
+candidates.map(
+word =>
+Number(
+word.text
+)
+)
+.filter(
+number =>
+number >= 0 &&
+number <= 999
+);
+
+
+/*
+  Normalmente as primeiras
+  colunas numéricas encontradas
+  correspondem às quantidades.
+
+  Caso não sejam reconhecidas,
+  deixamos vazio em vez de
+  inventar.
+*/
+
+return {
+
+solicitado:
+numbers.length >= 1
+? numbers[0]
+: "",
+
+aprovado:
+numbers.length >= 2
+? numbers[1]
+: ""
+
+};
+
+}
+
+
+/* =====================================================
+   EXTRAIR TUDO DA ÚLTIMA FOLHA
+===================================================== */
+
+function extractLastPage(
+data
+){
+
+const words =
+data.words || [];
+
+
+const lines =
+makeLines(
+words
+);
+
+
+const codes =
+findCodes(
+words
+);
+
+
+const collaborators =
+findCollaborators(
+lines
+);
+
+
+const items = [];
+
+
+for(
+const code of codes
+){
+
+/*
+  Colaborador mais próximo
+  abaixo do código.
+*/
+
+const collaborator =
+collaborators
+.filter(
+person =>
+person.y >= code.y-30
+)
+.sort(
+(a,b) =>
+a.y-b.y
+)[0];
+
+
+const collaboratorY =
+collaborator
+? collaborator.y
+: code.y+100;
+
+
+const description =
+extractDescription(
+lines,
+code,
+collaboratorY
+);
+
+
+const size =
+getSize(
+description
+);
+
+
+let productName =
+description.replace(
+/\(\s*\d{1,3}\s*\)/g,
+""
+);
+
+
+productName =
+productName.replace(
+/^\d+\s*/,
+""
+);
+
+
+productName =
+clean(productName);
+
+
+/*
+  Quantidades
+*/
+
+const quantities =
+findQuantities(
+code,
+words
+);
+
+
+items.push({
+
+codigo:
+code.code,
+
+produto:
+productName,
+
+tamanho:
+size,
+
+solicitado:
+quantities.solicitado,
+
+aprovado:
+quantities.aprovado,
+
+colaborador:
+collaborator
+? collaborator.name
+: ""
+
+});
+
+}
+
+
+/*
+  Remove duplicações.
+*/
+
+const unique = [];
+
+
+for(
+const item of items
+){
+
+const already =
+unique.some(
+existing =>
+
+existing.codigo ===
+item.codigo
+
+&&
+
+existing.colaborador ===
+item.colaborador
+);
+
+
+if(!already){
+
+unique.push(
+item
+);
+
+}
+
+}
+
+
+return {
+
+items:
+unique,
+
+lines:
+lines
+
+};
+
+}
+
+
+/* =====================================================
+   METADADOS
+===================================================== */
+
+function extractMetadata(
+text,
+lines
+){
+
+const normalized =
+normalize(text);
+
+
+/*
+  RQ
+*/
+
+let requisicao = "";
+
+
+const rqMatch =
+text.match(
+/\bRQ[-\s]?\d+\b/i
+);
+
+
+if(rqMatch){
+
+requisicao =
+rqMatch[0]
+.replace(
+/\s+/g,
+""
+);
+
+}
+
+
+/*
+  SOLICITANTE
+*/
+
+let solicitante = "";
+
+
+for(
+const line of lines
+){
+
+const value =
+getLineText(
+line
+);
+
+
+const match =
+value.match(
+/SOLICITANTE\s*:?\s*(.+)/i
+);
+
+
+if(match){
+
+solicitante =
+clean(match[1]);
+
+break;
+
+}
+
+}
+
+
+/*
+  Caso o OCR não coloque
+  a palavra SOLICITANTE,
+  procuramos a estrutura
+  comum do cabeçalho.
+*/
+
+if(!solicitante){
+
+for(
+const line of lines
+){
+
+const value =
+getLineText(
+line
+);
+
+
+if(
+normalize(value)
+.includes(
+"FORMULARIO APROVADO"
+)
+){
+
+const index =
+lines.indexOf(
+line
+);
+
+
+if(
+index > 0
+){
+
+const previous =
+getLineText(
+lines[index-1]
+);
+
+
+if(
+previous &&
+!/\d{2}\/\d{2}\/\d{4}/.test(
+previous
+)
+){
+
+solicitante =
+previous;
+
+}
+
+}
+
+}
+
+}
+
+}
+
+
+/*
+  CONTRATO / UNIDADE
+*/
+
+let contrato = "";
+
+
+for(
+const line of lines
+){
+
+const value =
+getLineText(
+line
+);
+
+
+if(
+/^\d{3,6}\s*-\s*/.test(
+value
+)
+){
+
+contrato =
+value;
+
+break;
+
+}
+
+}
+
+
+/*
+  Caso esteja misturado com
+  outros textos.
+*/
+
+if(!contrato){
+
+const match =
+text.match(
+/(\d{3,6}\s*-\s*[A-ZÀ-Ú0-9 ]+)/i
+);
+
+
+if(match){
+
+contrato =
+clean(match[1]);
+
+}
+
+}
+
+
+return {
+
+requisicao:
+requisicao,
+
+solicitante:
+solicitante,
+
+contrato:
+contrato
+
+};
+
+}
+
+
+/* =====================================================
+   PROCESSAR PDF
+===================================================== */
+
+async function processPDF(
+file
+){
+
+result.classList.add(
+"hidden"
+);
+
+actions.classList.add(
+"hidden"
+);
+
+rawCard.classList.add(
+"hidden"
+);
+
+
+try{
+
+progress(
+2,
+"Abrindo PDF..."
+);
+
+
+const buffer =
+await file.arrayBuffer();
+
+
+const pdf =
+await pdfjsLib
+.getDocument({
+data:buffer
+})
+.promise;
+
+
+progress(
+5,
+`PDF possui ${pdf.numPages} página(s).`
+);
+
+
+/*
+  IMPORTANTE:
+
+  Não renderizamos as páginas
+  anteriores.
+
+  Pegamos somente:
+  
+  pdf.numPages
+*/
+
+const canvas =
+await renderLastPage(
+pdf
+);
+
+
+progress(
+20,
+"Lendo última página..."
+);
+
+
+const ocrData =
+await runOCR(
+canvas
+);
+
+
+progress(
+92,
+"Organizando dados..."
+);
+
+
+const text =
+ocrData.text ||
+"";
+
+
+/*
+  Monta os metadados.
+*/
+
+const lines =
+makeLines(
+ocrData.words || []
+);
+
+
+const metadata =
+extractMetadata(
+text,
+lines
+);
+
+
+/*
+  Extrai os itens somente
+  da última página.
+*/
+
+const extracted =
+extractLastPage(
+ocrData
+);
+
+
+finalData = {
+
+requisicao:
+metadata.requisicao,
+
+solicitante:
+metadata.solicitante,
+
+contrato:
+metadata.contrato,
+
+itens:
+extracted.items
+
+};
+
+
+renderResult(
+finalData
+);
+
+
+raw.textContent =
+text;
+
+
+progress(
+100,
+`Concluído. ${finalData.itens.length} item(ns) encontrado(s) na última folha.`
+);
+
+
+}catch(error){
+
+console.error(
+error
+);
+
+status.innerHTML =
+`<span class="error">
+Erro: ${escapeHTML(
+error.message ||
+String(error)
+)}
+</span>`;
+
+}
+
+}
+
+
+/* =====================================================
+   MOSTRAR RESULTADO
+===================================================== */
+
+function renderResult(
+data
+){
+
+meta.innerHTML = "";
+
+
+const fields = [
+
+[
+"Requisição",
+data.requisicao
+],
+
+[
+"Solicitante",
+data.solicitante
+],
+
+[
+"Contrato / Unidade",
+data.contrato
+]
+
+];
+
+
+for(
+const [label,value]
+of fields
+){
+
+meta.insertAdjacentHTML(
+
+"beforeend",
+
+`
+<div class="field">
+
+<div class="label">
+${escapeHTML(label)}
+</div>
+
+<div class="value">
+${escapeHTML(
+value ||
+"Não identificado"
+)}
+</div>
+
+</div>
+`
+
+);
+
+}
+
+
+tbody.innerHTML = "";
+
+
+for(
+const item of data.itens
+){
+
+tbody.insertAdjacentHTML(
+
+"beforeend",
+
+`
+<tr>
+
+<td>
+${escapeHTML(item.codigo)}
+</td>
+
+<td>
+${escapeHTML(item.produto)}
+</td>
+
+<td>
+${escapeHTML(item.tamanho)}
+</td>
+
+<td>
+${escapeHTML(item.solicitado)}
+</td>
+
+<td>
+${escapeHTML(item.aprovado)}
+</td>
+
+<td>
+${escapeHTML(item.colaborador)}
+</td>
+
+</tr>
+`
+
+);
+
+}
+
+
+result.classList.remove(
+"hidden"
+);
+
+actions.classList.remove(
+"hidden"
+);
+
+}
+
+
+/* =====================================================
+   ESCAPE HTML
+===================================================== */
+
+function escapeHTML(
+value
+){
+
+return String(
+value ?? ""
+)
+.replace(
+/[&<>"']/g,
+char =>
+({
+
+"&":"&amp;",
+"<":"&lt;",
+">":"&gt;",
+'"':"&quot;",
+"'":"&#39;"
+
+})[char]
+);
+
+}
+
+
+/* =====================================================
+   COPIAR JSON
+===================================================== */
+
+document
+.getElementById("copy")
+.addEventListener(
+"click",
+async () => {
+
+if(!finalData){
+
+return;
+
+}
+
+
+await navigator
+.clipboard
+.writeText(
+JSON.stringify(
+finalData,
+null,
+2
+)
+);
+
+
+status.textContent =
+"JSON copiado.";
+
+}
+);
+
+
+/* =====================================================
+   CSV
+===================================================== */
+
+document
+.getElementById("csv")
+.addEventListener(
+"click",
+() => {
+
+if(!finalData){
+
+return;
+
+}
+
+
+const columns = [
+
+"codigo",
+"produto",
+"tamanho",
+"solicitado",
+"aprovado",
+"colaborador"
+
+];
+
+
+function csvValue(
+value
+){
+
+return `"${String(
+value ?? ""
+).replace(
+/"/g,
+'""'
+)}"`;
+
+}
+
+
+const rows = [
+
+columns.join(";"),
+
+...finalData.itens.map(
+item =>
+columns
+.map(
+column =>
+csvValue(
+item[column]
+)
+)
+.join(";")
+)
+
+];
+
+
+const blob =
+new Blob(
+[
+"\ufeff" +
+rows.join("\n")
+],
+{
+type:
+"text/csv;charset=utf-8"
+}
+);
+
+
+const url =
+URL.createObjectURL(
+blob
+);
+
+
+const a =
+document.createElement(
+"a"
+);
+
+
+a.href =
+url;
+
+
+a.download =
+(
+finalData.requisicao ||
+"requisicao"
+)
++
+".csv";
+
+
+a.click();
+
+
+URL.revokeObjectURL(
+url
+);
+
+}
+);
+
+
+/* =====================================================
+   OCR
+===================================================== */
+
+document
+.getElementById("toggleRaw")
+.addEventListener(
+"click",
+() => {
+
+rawCard.classList.toggle(
+"hidden"
+);
+
+}
+);
+
+</script>
+
+</body>
+</html>
